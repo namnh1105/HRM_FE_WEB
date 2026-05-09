@@ -1,7 +1,6 @@
 import { baseApi } from './baseApi';
 import {
     ApiResponse,
-    PaginatedApiResponse,
     UserResponse,
 } from '@/types';
 

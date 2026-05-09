@@ -54,7 +54,7 @@ export const setStoredUser = (user: unknown) => {
     localStorage.setItem(USER_KEY, JSON.stringify(user));
 };
 
-export const getStoredUser = (): any | null => {
+export const getStoredUser = (): unknown | null => {
     if (!isBrowser()) return null;
     const raw = localStorage.getItem(USER_KEY);
     if (!raw) return null;

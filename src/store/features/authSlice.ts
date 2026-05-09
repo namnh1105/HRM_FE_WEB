@@ -11,26 +11,45 @@ const initialState: AuthState = {
     permissions: [],
 };
 
-export const mapToUserInfo = (raw: any): UserInfo => ({
-    id: raw.id,
-    email: raw.email ?? raw.username,
-    username: raw.username ?? raw.email,
-    givenName: raw.givenName ?? raw.given_name,
-    familyName: raw.familyName ?? raw.family_name,
-    avatarUrl: raw.avatarUrl ?? raw.avatar_url ?? null,
-    employee: raw.employee ?? null,
-    roles: raw.roles ?? raw.role_codes ?? [],
-    permissions: raw.permissions ?? raw.permission_codes ?? [],
-    isActive: raw.isActive ?? raw.is_active,
-    isDeleted: raw.isDeleted ?? raw.is_deleted,
-    createdAt: raw.createdAt ?? raw.created_at,
-    updatedAt: raw.updatedAt ?? raw.updated_at,
-    createdBy: raw.createdBy ?? raw.created_by,
-    updatedBy: raw.updatedBy ?? raw.updated_by,
-    deletedAt: raw.deletedAt ?? raw.deleted_at,
-    deletedBy: raw.deletedBy ?? raw.deleted_by,
-    storeId: raw.storeId ?? raw.store_id ?? raw.employee?.storeId ?? raw.employee?.store_id,
-});
+type UnknownRecord = Record<string, unknown>;
+
+const asRecord = (value: unknown): UnknownRecord => (typeof value === 'object' && value !== null ? value as UnknownRecord : {});
+const asString = (value: unknown): string | undefined => (typeof value === 'string' ? value : undefined);
+const asNullableString = (value: unknown): string | null | undefined =>
+    value === null ? null : typeof value === 'string' ? value : undefined;
+const asBoolean = (value: unknown): boolean | undefined => (typeof value === 'boolean' ? value : undefined);
+const asStringArray = (value: unknown): string[] =>
+    Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : [];
+
+export const mapToUserInfo = (raw: unknown): UserInfo => {
+    const source = asRecord(raw);
+    const employee = asRecord(source.employee);
+
+    return {
+        id: asString(source.id) ?? '',
+        email: asString(source.email) ?? asString(source.username),
+        username: asString(source.username) ?? asString(source.email),
+        givenName: asString(source.givenName) ?? asString(source.given_name),
+        familyName: asString(source.familyName) ?? asString(source.family_name),
+        avatarUrl: asNullableString(source.avatarUrl) ?? asNullableString(source.avatar_url) ?? null,
+        employee: source.employee ?? null,
+        roles: asStringArray(source.roles).length ? asStringArray(source.roles) : asStringArray(source.role_codes),
+        permissions: asStringArray(source.permissions).length ? asStringArray(source.permissions) : asStringArray(source.permission_codes),
+        isActive: asBoolean(source.isActive) ?? asBoolean(source.is_active),
+        isDeleted: asBoolean(source.isDeleted) ?? asBoolean(source.is_deleted),
+        createdAt: asString(source.createdAt) ?? asString(source.created_at),
+        updatedAt: asString(source.updatedAt) ?? asString(source.updated_at),
+        createdBy: asNullableString(source.createdBy) ?? asNullableString(source.created_by),
+        updatedBy: asNullableString(source.updatedBy) ?? asNullableString(source.updated_by),
+        deletedAt: asNullableString(source.deletedAt) ?? asNullableString(source.deleted_at),
+        deletedBy: asNullableString(source.deletedBy) ?? asNullableString(source.deleted_by),
+        storeId:
+            asNullableString(source.storeId) ??
+            asNullableString(source.store_id) ??
+            asNullableString(employee.storeId) ??
+            asNullableString(employee.store_id),
+    };
+};
 
 export const authSlice = createSlice({
     name: 'auth',

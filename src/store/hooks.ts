@@ -1,18 +1,7 @@
 import { useDispatch, useSelector } from 'react-redux';
 import type { TypedUseSelectorHook } from 'react-redux';
-import type { AppDispatch } from './index';
+import type { AppDispatch, RootState } from './index';
 
-// We define StoreState here to avoid circular imports
-export type StoreState = {
-    auth?: {
-        accessToken: string | null;
-        refreshToken: string | null;
-        user: any | null;
-        isAuthenticated: boolean;
-    };
-    [key: string]: any;
-};
-
-export const useAppDispatch: () => AppDispatch = useDispatch;
-export const useAppSelector: TypedUseSelectorHook<StoreState> = useSelector;
+export const useAppDispatch = () => useDispatch<AppDispatch>();
+export const useAppSelector: TypedUseSelectorHook<RootState> = useSelector;
 

@@ -59,7 +59,7 @@ export default function DashboardPage() {
                                 <div style={{ 
                                     width: 42, height: 42, borderRadius: 10, 
                                     background: 'var(--bg-elevated)', border: '1px solid var(--border)',
-                                    display: 'flex', alignItems: 'center', justifyCenter: 'center',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
                                     color: stat.color, flexShrink: 0
                                 }}>
                                     <Icon size={20} style={{ margin: 'auto' }} />
@@ -98,7 +98,7 @@ export default function DashboardPage() {
                                         <div style={{ 
                                             width: 32, height: 32, borderRadius: 8, 
                                             background: `${act.color}15`, 
-                                            display: 'flex', alignItems: 'center', justifyCenter: 'center',
+                                            display: 'flex', alignItems: 'center', justifyContent: 'center',
                                             color: act.color, flexShrink: 0
                                         }}>
                                             <Icon size={16} style={{ margin: 'auto' }} />
@@ -186,6 +186,7 @@ export default function DashboardPage() {
 }
 
 // Re-using some types/icons from layout but locally defined icons for shortcuts
-const Shield = ({ size, style }: any) => <Activity size={size} style={style} />; // Mock for demo
-const Key = ({ size, style }: any) => <TrendingUp size={size} style={style} />; // Mock for demo
-const Settings = ({ size, style }: any) => <Clock size={size} style={style} />; // Mock for demo
+type ShortcutIconProps = { size?: number; style?: React.CSSProperties };
+const Shield = ({ size, style }: ShortcutIconProps) => <Activity size={size} style={style} />; // Mock for demo
+const Key = ({ size, style }: ShortcutIconProps) => <TrendingUp size={size} style={style} />; // Mock for demo
+const Settings = ({ size, style }: ShortcutIconProps) => <Clock size={size} style={style} />; // Mock for demo

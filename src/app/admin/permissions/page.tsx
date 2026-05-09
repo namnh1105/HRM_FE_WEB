@@ -46,7 +46,8 @@ function PermFormModal({ initial, onClose, pushToast }: {
     const [update, { isLoading: u }] = useUpdatePermissionMutation();
     const busy = c || u;
 
-    const set = (k: keyof typeof form, v: any) => setForm(p => ({ ...p, [k]: v }));
+    const set = <K extends keyof CreatePermissionRequest>(k: K, v: CreatePermissionRequest[K]) =>
+        setForm((p) => ({ ...p, [k]: v }));
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();

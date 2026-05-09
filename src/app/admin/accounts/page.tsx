@@ -337,8 +337,14 @@ export default function AccountsPage() {
         try {
             await restoreUser(user.id).unwrap();
             pushToast('Đã khôi phục tài khoản');
-        } catch (err: any) {
-            const msg = err?.data?.message || 'Khôi phục thất bại';
+        } catch (err: unknown) {
+            const msg =
+                typeof err === 'object' &&
+                err !== null &&
+                'data' in err &&
+                typeof (err as { data?: { message?: unknown } }).data?.message === 'string'
+                    ? (err as { data: { message: string } }).data.message
+                    : 'Khôi phục thất bại';
             pushToast(msg, 'error');
         }
     };

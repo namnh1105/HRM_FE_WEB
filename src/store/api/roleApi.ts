@@ -3,6 +3,7 @@ import {
     ApiResponse,
     PaginatedApiResponse,
     RoleResponse,
+    PermissionResponse,
     CreateRoleRequest,
     UpdateRoleRequest,
 } from '@/types';

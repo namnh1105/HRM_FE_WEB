@@ -5,7 +5,7 @@ export type UserInfo = {
     givenName?: string;
     familyName?: string;
     avatarUrl?: string | null;
-    employee?: any;
+    employee?: unknown | null;
     roles: string[];
     permissions: string[];
     isActive?: boolean;

@@ -168,10 +168,11 @@ function PermissionManagerModal({
     // Local state for selected permission IDs
     const [selectedIds, setSelectedIds] = useState<Set<string>>(() => {
         const perms = role.permissions ?? [];
-        return new Set(perms.map(p => {
-            if (typeof p === 'string') return p;
-            return (p as any)?.id;
-        }).filter(Boolean));
+        return new Set(
+            perms
+                .map((p) => (typeof p === 'string' ? p : p.id))
+                .filter((id): id is string => Boolean(id))
+        );
     });
 
     const [initialized, setInitialized] = useState(false);
@@ -249,8 +250,14 @@ function PermissionManagerModal({
             }).unwrap();
             pushToast('Đã cập nhật danh sách quyền');
             onClose();
-        } catch (err: any) {
-            const msg = err?.data?.message || 'Cập nhật thất bại';
+        } catch (err: unknown) {
+            const msg =
+                typeof err === 'object' &&
+                err !== null &&
+                'data' in err &&
+                typeof (err as { data?: { message?: unknown } }).data?.message === 'string'
+                    ? (err as { data: { message: string } }).data.message
+                    : 'Cập nhật thất bại';
             pushToast(msg, 'error');
         }
     };
@@ -537,7 +544,6 @@ export default function RolesPage() {
                             <th>Code</th>
                             <th>Tên role</th>
                             <th>Mô tả</th>
-                            <th>Quyền</th>
                             <th>Loại</th>
                             <th>Trạng thái</th>
                             <th>Hành động</th>
@@ -547,14 +553,14 @@ export default function RolesPage() {
                         {isLoading ? (
                             Array.from({ length: 5 }).map((_, i) => (
                                 <tr key={i}>
-                                    {Array.from({ length: 7 }).map((__, j) => (
+                                    {Array.from({ length: 6 }).map((__, j) => (
                                         <td key={j}><div className="skeleton" style={{ height: 16, width: '80%' }} /></td>
                                     ))}
                                 </tr>
                             ))
                         ) : filtered.length === 0 ? (
                             <tr>
-                                <td colSpan={7}>
+                                <td colSpan={6}>
                                     <div className="empty-state">
                                         <Shield size={40} className="empty-icon" />
                                         <p className="empty-text">Không có role nào</p>
@@ -570,18 +576,6 @@ export default function RolesPage() {
                                         <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', display: 'block', whiteSpace: 'nowrap' }}>
                                             {role.description ?? '—'}
                                         </span>
-                                    </td>
-                                    <td>
-                                        <button
-                                            className="badge badge-blue"
-                                            style={{ cursor: 'pointer', border: 'none', background: 'rgba(99,102,241,0.12)' }}
-                                            id={`manage-perm-${role.id}`}
-                                            onClick={() => setPermModal(role)}
-                                            title="Quản lý quyền"
-                                        >
-                                            <Key size={11} />
-                                            {(role.permissions ?? []).length} quyền
-                                        </button>
                                     </td>
                                     <td>
                                         {role.isSystem ? (
@@ -601,6 +595,14 @@ export default function RolesPage() {
                                     </td>
                                     <td>
                                         <div style={{ display: 'flex', gap: 6 }}>
+                                            <button
+                                                className="btn btn-ghost btn-sm"
+                                                title="Xem quyền"
+                                                id={`manage-perm-${role.id}`}
+                                                onClick={() => setPermModal(role)}
+                                            >
+                                                <Key size={13} /> Xem quyền
+                                            </button>
                                             {!role.isDeleted ? (
                                                 <>
                                                     <button

@@ -34,8 +34,16 @@ export default function LoginPage() {
             } else {
                 setError(res.message || 'Đăng nhập thất bại');
             }
-        } catch (err: any) {
-            const msg = err?.data?.message || err?.error || 'Email hoặc mật khẩu không đúng';
+        } catch (err: unknown) {
+            const msg =
+                typeof err === 'object' &&
+                err !== null &&
+                'data' in err &&
+                typeof (err as { data?: { message?: unknown } }).data?.message === 'string'
+                    ? (err as { data: { message: string } }).data.message
+                    : typeof err === 'object' && err !== null && 'error' in err && typeof (err as { error?: unknown }).error === 'string'
+                        ? (err as { error: string }).error
+                        : 'Email hoặc mật khẩu không đúng';
             setError(msg);
         }
     };

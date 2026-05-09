@@ -19,10 +19,12 @@ const rawBaseQuery = fetchBaseQuery({
 });
 
 let refreshPromise: Promise<string | null> | null = null;
+type RawBaseQueryApi = Parameters<typeof rawBaseQuery>[1];
+type RawBaseQueryExtraOptions = Parameters<typeof rawBaseQuery>[2];
 
 const performRefresh = async (
-    api: any,
-    extraOptions: any
+    api: RawBaseQueryApi,
+    extraOptions: RawBaseQueryExtraOptions
 ): Promise<string | null> => {
     const refreshToken = getRefreshToken();
     if (!refreshToken) return null;
@@ -40,7 +42,7 @@ const performRefresh = async (
     if (refreshResult.data) {
         const data = refreshResult.data as {
             success: boolean;
-            data?: { accessToken: string; refreshToken?: string; user?: any };
+            data?: { accessToken: string; refreshToken?: string; user?: unknown };
         };
 
         if (data.success && data.data?.accessToken) {

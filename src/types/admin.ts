@@ -49,6 +49,7 @@ export interface PermissionResponse {
   action: string;
   isSystem: boolean;
   isActive: boolean;
+  isDeleted?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -60,6 +61,7 @@ export interface RoleResponse {
   description: string | null;
   isSystem: boolean;
   isActive: boolean;
+  isDeleted?: boolean;
   permissions: PermissionResponse[];
   createdAt: string;
   updatedAt: string;

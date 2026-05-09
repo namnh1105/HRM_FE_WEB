@@ -15,11 +15,18 @@ import {
     Search,
     Settings,
 } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { logout } from '@/store/features/authSlice';
 import { clearTokens, clearStoredUser } from '@/utils/tokenStorage';
 
-const NAV_ITEMS = [
+type NavItem =
+    | { label: string; isSection: true }
+    | { label: string; href: string; icon: LucideIcon; badge?: string | null };
+const isNavSection = (item: NavItem): item is Extract<NavItem, { isSection: true }> =>
+    'isSection' in item && item.isSection === true;
+
+const NAV_ITEMS: NavItem[] = [
     {
         label: 'Dashboard',
         href: '/admin/dashboard',
@@ -72,20 +79,20 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 {/* Nav */}
                 <nav className="sidebar-nav">
                     {NAV_ITEMS.map((item, idx) => {
-                        if ('isSection' in item && item.isSection) {
+                        if (isNavSection(item)) {
                             return !collapsed ? (
                                 <p key={idx} className="nav-section-label">{item.label}</p>
                             ) : (
                                 <hr key={idx} className="nav-divider" />
                             );
                         }
-                        const Icon = (item as any).icon;
-                        const href = (item as any).href as string;
+                        const Icon = item.icon;
+                        const href = item.href;
                         const active = pathname === href || pathname.startsWith(href + '/');
                         return (
                             <Link key={href} href={href} className={`nav-item ${active ? 'active' : ''}`}>
                                 <Icon size={18} className="nav-icon" />
-                                {!collapsed && <span className="nav-label">{(item as any).label}</span>}
+                                {!collapsed && <span className="nav-label">{item.label}</span>}
                                 {active && <span className="nav-active-bar" />}
                             </Link>
                         );
