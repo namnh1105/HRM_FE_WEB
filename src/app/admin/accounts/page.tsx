@@ -209,7 +209,7 @@ function CreateUserModal({
         e.preventDefault();
         try {
             await registerUser({
-                username: form.email,
+                email: form.email,
                 givenName: form.givenName,
                 familyName: form.familyName,
                 password: form.password,

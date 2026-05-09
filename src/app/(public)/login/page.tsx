@@ -6,6 +6,7 @@ import { useLoginMutation } from '@/store/api/authApi';
 import { useAppDispatch } from '@/store/hooks';
 import { mapToUserInfo, setCredentials } from '@/store/features/authSlice';
 import { saveTokens, setStoredUser } from '@/utils/tokenStorage';
+import { getRoleCodes, hasRole } from '@/utils/roleUtils';
 
 export default function LoginPage() {
     const router = useRouter();
@@ -23,6 +24,7 @@ export default function LoginPage() {
             const res = await login({ email: form.email, password: form.password }).unwrap();
             if (res.success && res.data) {
                 const mappedUser = mapToUserInfo(res.data.user);
+                const roleCodes = getRoleCodes(mappedUser.roles);
                 dispatch(setCredentials({
                     accessToken: res.data.accessToken,
                     refreshToken: res.data.refreshToken,
@@ -30,7 +32,13 @@ export default function LoginPage() {
                 }));
                 saveTokens(res.data.accessToken, res.data.refreshToken);
                 setStoredUser(mappedUser);
-                router.replace('/admin/accounts');
+                if (hasRole(roleCodes, 'ADMIN')) {
+                    router.replace('/admin/dashboard');
+                } else if (hasRole(roleCodes, 'HR')) {
+                    router.replace('/hr/dashboard');
+                } else {
+                    router.replace('/403');
+                }
             } else {
                 setError(res.message || 'Đăng nhập thất bại');
             }

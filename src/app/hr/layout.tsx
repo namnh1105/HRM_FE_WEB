@@ -1,28 +1,28 @@
 'use client';
+
 import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
-    Users,
-    Shield,
-    Key,
-    LayoutDashboard,
-    LogOut,
+    Building2,
+    CalendarCheck2,
     ChevronLeft,
     ChevronRight,
-    Building2,
-    Bell,
+    Clock3,
+    FileText,
+    Key,
+    LogOut,
     Search,
     Settings,
-    Clock3,
-    CalendarCheck2,
-    FileText,
+    Bell,
+    LayoutDashboard,
+    Users,
     BriefcaseBusiness,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { logout } from '@/store/features/authSlice';
-import { clearTokens, clearStoredUser } from '@/utils/tokenStorage';
+import { clearStoredUser, clearTokens } from '@/utils/tokenStorage';
 import { getRoleCodes, hasRole } from '@/utils/roleUtils';
 import HrmGlobalStyles from '@/components/HrmGlobalStyles';
 
@@ -33,42 +33,28 @@ const isNavSection = (item: NavItem): item is Extract<NavItem, { isSection: true
     'isSection' in item && item.isSection === true;
 
 const NAV_ITEMS: NavItem[] = [
-    {
-        label: 'Dashboard',
-        href: '/admin/dashboard',
-        icon: LayoutDashboard,
-    },
-    {
-        label: 'Tài khoản',
-        href: '/admin/accounts',
-        icon: Users,
-    },
-    {
-        label: 'Vai trò',
-        href: '/admin/roles',
-        icon: Shield,
-    },
-    {
-        label: 'Quyền hạn',
-        href: '/admin/permissions',
-        icon: Key,
-    }
+    { label: 'Dashboard', href: '/hr/dashboard', icon: LayoutDashboard },
+    { label: 'Nhân viên', href: '/hr/employees', icon: Users },
+    { label: 'Chấm công', href: '/hr/attendances', icon: Clock3 },
+    { label: 'Ca làm', href: '/hr/work-shifts', icon: CalendarCheck2 },
+    { label: 'Nghỉ phép', href: '/hr/leave-requests', icon: Key },
+    { label: 'Tuyển dụng', href: '/hr/recruitment', icon: BriefcaseBusiness },
+    { label: 'Hợp đồng', href: '/hr/contracts', icon: FileText },
 ] as const;
 
-export default function AdminLayout({ children }: { children: React.ReactNode }) {
+export default function HrLayout({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
     const router = useRouter();
     const dispatch = useAppDispatch();
     const user = useAppSelector((s) => s.auth?.user);
     const [collapsed, setCollapsed] = useState(false);
+
     const roleCodes = useMemo(() => getRoleCodes(user?.roles), [user?.roles]);
-    const hasAdminRole = useMemo(() => hasRole(roleCodes, 'ADMIN'), [roleCodes]);
-    const forbidden = Boolean(user) && !hasAdminRole;
+    const hasHrRole = useMemo(() => hasRole(roleCodes, 'HR'), [roleCodes]);
+    const forbidden = Boolean(user) && !hasHrRole;
 
     useEffect(() => {
-        if (forbidden) {
-            router.replace('/403');
-        }
+        if (forbidden) router.replace('/403');
     }, [forbidden, router]);
 
     if (forbidden) return null;
@@ -82,15 +68,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     return (
         <div className="hrm-shell">
             <HrmGlobalStyles />
-            {/* ── Sidebar ── */}
+
             <aside className={`hrm-sidebar ${collapsed ? 'collapsed' : ''}`}>
-                {/* Logo */}
                 <div className="sidebar-brand">
                     <Building2 size={22} className="brand-icon" />
                     {!collapsed && <span className="brand-text">GiaKhanh</span>}
                 </div>
 
-                {/* Nav */}
                 <nav className="sidebar-nav">
                     {NAV_ITEMS.map((item, idx) => {
                         if (isNavSection(item)) {
@@ -113,16 +97,15 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     })}
                 </nav>
 
-                {/* User pill */}
                 <div className="sidebar-footer">
                     {!collapsed && (
                         <div className="user-pill">
                             <div className="user-avatar">
-                                {user?.email?.[0]?.toUpperCase() ?? 'A'}
+                                {user?.email?.[0]?.toUpperCase() ?? 'H'}
                             </div>
                             <div className="user-info">
-                                <p className="user-email">{user?.email ?? 'admin'}</p>
-                                <p className="user-role">{hasAdminRole ? 'ADMIN' : roleCodes[0] ?? 'User'}</p>
+                                <p className="user-email">{user?.email ?? 'hr'}</p>
+                                <p className="user-role">{hasHrRole ? 'HR' : roleCodes[0] ?? 'User'}</p>
                             </div>
                         </div>
                     )}
@@ -132,15 +115,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     </button>
                 </div>
 
-                {/* Collapse toggle */}
                 <button className="collapse-btn" onClick={() => setCollapsed(!collapsed)}>
                     {collapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
                 </button>
             </aside>
 
-            {/* ── Main content ── */}
             <div className="hrm-content">
-                {/* Top bar */}
                 <header className="hrm-topbar">
                     <div className="topbar-search">
                         <Search size={16} className="search-icon" />
@@ -156,10 +136,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     </div>
                 </header>
 
-                <main className="hrm-main">
-                    {children}
-                </main>
+                <main className="hrm-main">{children}</main>
             </div>
         </div>
     );
 }
+

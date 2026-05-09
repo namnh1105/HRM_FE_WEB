@@ -4,6 +4,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { mapToUserInfo, restoreAuth } from '@/store/features/authSlice';
 import { getStoredUser, restoreAccessToken, getRefreshToken } from '@/utils/tokenStorage';
+import { getRoleCodes, hasRole } from '@/utils/roleUtils';
 
 export default function AuthProvider({ children }: { children: React.ReactNode }) {
     const dispatch = useAppDispatch();
@@ -28,13 +29,18 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
         if (!isInitialized) return;
 
         const isLoginPage = pathname === '/login';
-        const isAdminPage = pathname.startsWith('/admin') || pathname === '/dashboard' || pathname === '/';
+        const isRootPage = pathname === '/' || pathname === '/dashboard';
+        const isProtectedPage = pathname.startsWith('/admin') || pathname.startsWith('/hr');
 
-        if (isAuthenticated && isLoginPage) {
-            // Logged in user shouldn't be on login page
-            router.replace('/admin/accounts');
-        } else if (!isAuthenticated && isAdminPage && pathname !== '/login') {
-            // Anonymous user shouldn't be on admin pages
+        if (isAuthenticated && (isLoginPage || isRootPage)) {
+            const storedUser = getStoredUser();
+            const mappedUser = mapToUserInfo(storedUser);
+            const roleCodes = getRoleCodes(mappedUser.roles);
+            if (hasRole(roleCodes, 'ADMIN')) router.replace('/admin/dashboard');
+            else if (hasRole(roleCodes, 'HR')) router.replace('/hr/dashboard');
+            else router.replace('/403');
+        } else if (!isAuthenticated && isProtectedPage && pathname !== '/login') {
+            // Anonymous user shouldn't be on protected pages
             router.replace('/login');
         }
     }, [isInitialized, isAuthenticated, pathname, router]);

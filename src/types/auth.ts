@@ -10,7 +10,7 @@ export type RefreshTokenDTO = {
 }
 
 export type RegisterDTO = {
-    username : string;
+    email : string;
     givenName : string;
     familyName : string;
     password : string;
