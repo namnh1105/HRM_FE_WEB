@@ -14,17 +14,13 @@ import {
     Bell,
     Search,
     Settings,
-    Clock3,
-    CalendarCheck2,
-    FileText,
-    BriefcaseBusiness,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { logout } from '@/store/features/authSlice';
 import { clearTokens, clearStoredUser } from '@/utils/tokenStorage';
 import { getRoleCodes, hasRole } from '@/utils/roleUtils';
-import HrmGlobalStyles from '@/components/HrmGlobalStyles';
+import AppGlobalStyles from '@/components/AppGlobalStyles';
 
 type NavItem =
     | { label: string; isSection: true }
@@ -52,7 +48,7 @@ const NAV_ITEMS: NavItem[] = [
         label: 'Quyền hạn',
         href: '/admin/permissions',
         icon: Key,
-    }
+    },
 ] as const;
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -81,7 +77,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
     return (
         <div className="hrm-shell">
-            <HrmGlobalStyles />
+            <AppGlobalStyles />
             {/* ── Sidebar ── */}
             <aside className={`hrm-sidebar ${collapsed ? 'collapsed' : ''}`}>
                 {/* Logo */}

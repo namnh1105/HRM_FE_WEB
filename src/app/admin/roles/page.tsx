@@ -8,45 +8,31 @@ import {
     useActivateRoleMutation,
     useDeactivateRoleMutation,
     useRestoreRoleMutation,
-    useGetRoleByIdQuery,
     useGetRolePermissionsQuery,
     useSyncPermissionsToRoleMutation,
 } from '@/store/api/roleApi';
 import {
-    ChevronDown,
     ChevronRight,
     Lock,
     Unlock,
     RotateCcw,
-    ShieldCheck,
-    Search,
     Plus,
     Shield,
     Trash2,
     Pencil,
-    ToggleLeft,
-    ToggleRight,
     X,
     Key,
-    ChevronLeft,
-    UserCheck,
-    UserX,
     CheckSquare,
-    Square
 } from 'lucide-react';
 import { useGetActivePermissionsQuery } from '@/store/api/permissionApi';
 import type { RoleResponse, CreateRoleRequest, UpdateRoleRequest } from '@/types';
-
-// ─── Toast ────────────────────────────────────────────────────────────────────
-function useToast() {
-    const [toasts, setToasts] = useState<{ id: number; msg: string; type: 'success' | 'error' }[]>([]);
-    const push = (msg: string, type: 'success' | 'error' = 'success') => {
-        const id = Date.now();
-        setToasts((p) => [...p, { id, msg, type }]);
-        setTimeout(() => setToasts((p) => p.filter((t) => t.id !== id)), 3500);
-    };
-    return { toasts, push };
-}
+import PageHeader from '@/components/ui/PageHeader';
+import StatCards from '@/components/ui/StatCards';
+import DataTable from '@/components/ui/DataTable';
+import { SearchBox } from '@/components/ui/ToolbarControls';
+import EntityStatusFilters, { type EntityFilterStatus } from '@/components/ui/EntityStatusFilters';
+import ToastStack from '@/components/ToastStack';
+import { useToast } from '@/hooks/useToast';
 
 // ─── Role Form Modal ──────────────────────────────────────────────────────────
 function RoleFormModal({
@@ -180,18 +166,11 @@ function PermissionManagerModal({
     // Sync local state when roleData (full fetch) is loaded
     React.useEffect(() => {
         if (!initialized && roleData?.data && Array.isArray(roleData.data)) {
-            console.log('Role permissions loaded:', roleData.data.length);
             const ids = roleData.data.map(p => String(p.id));
             setSelectedIds(new Set(ids));
             setInitialized(true);
         }
     }, [roleData, initialized]);
-
-    React.useEffect(() => {
-        if (allPermsData?.data) {
-            console.log('All permissions loaded:', allPermsData.data.length);
-        }
-    }, [allPermsData]);
 
     const filteredPerms = useMemo(() => {
         const all = allPermsData?.data ?? [];
@@ -253,9 +232,9 @@ function PermissionManagerModal({
         } catch (err: unknown) {
             const msg =
                 typeof err === 'object' &&
-                err !== null &&
-                'data' in err &&
-                typeof (err as { data?: { message?: unknown } }).data?.message === 'string'
+                    err !== null &&
+                    'data' in err &&
+                    typeof (err as { data?: { message?: unknown } }).data?.message === 'string'
                     ? (err as { data: { message: string } }).data.message
                     : 'Cập nhật thất bại';
             pushToast(msg, 'error');
@@ -278,17 +257,14 @@ function PermissionManagerModal({
                 </div>
 
                 <div style={{ marginBottom: 12 }}>
-                    <div className="toolbar-search" style={{ width: '100%' }}>
-                        <Search size={14} className="toolbar-search-icon" />
-                        <input
-                            id="perm-manager-search"
-                            className="toolbar-search-input"
-                            style={{ width: '100%' }}
-                            placeholder="Tìm quyền…"
-                            value={permSearch}
-                            onChange={(e) => setPermSearch(e.target.value)}
-                        />
-                    </div>
+                    <SearchBox
+                        id="perm-manager-search"
+                        placeholder="Tìm quyền…"
+                        value={permSearch}
+                        onChange={setPermSearch}
+                        wrapperStyle={{ width: '100%' }}
+                        inputStyle={{ width: '100%' }}
+                    />
                 </div>
 
                 <div style={{ maxHeight: 420, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -406,7 +382,7 @@ function PermissionManagerModal({
 export default function RolesPage() {
     const [page, setPage] = useState(0);
     const [search, setSearch] = useState('');
-    const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'inactive' | 'deleted'>('all');
+    const [filterStatus, setFilterStatus] = useState<EntityFilterStatus>('all');
 
     const { data, isLoading, isFetching } = useGetAllRolesQuery({
         page,
@@ -481,63 +457,58 @@ export default function RolesPage() {
 
     return (
         <>
-            <div className="page-header">
-                <div>
-                    <h1 className="page-title">Quản lý vai trò</h1>
-                    <p className="page-subtitle">Tạo và cấu hình các vai trò trong hệ thống</p>
-                </div>
-                <button className="btn btn-primary" id="create-role-btn" onClick={() => setFormModal({ open: true })}>
-                    <Plus size={15} /> Tạo Role mới
-                </button>
-            </div>
+            <PageHeader
+                title="Quản lý vai trò"
+                subtitle="Tạo và cấu hình các vai trò trong hệ thống"
+                actions={
+                    <button type="button" className="btn btn-primary" id="create-role-btn" onClick={() => setFormModal({ open: true })}>
+                        <Plus size={15} /> Tạo Role mới
+                    </button>
+                }
+            />
 
-            {/* Stats */}
-            <div className="stat-grid">
-                <div className="stat-card">
-                    <p className="stat-label">Số lượng vai trò</p>
-                    <p className="stat-value">{meta?.totalItems ?? '—'}</p>
-                </div>
-                <div className="stat-card">
-                    <p className="stat-label">Đang hoạt động</p>
-                    <p className="stat-value" style={{ color: 'var(--green)' }}>
-                        {roles.filter((r) => r.isActive).length}
-                    </p>
-                </div>
-            </div>
+            <StatCards
+                items={[
+                    { label: 'Số lượng vai trò', value: meta?.totalItems ?? '—' },
+                    { label: 'Đang hoạt động', value: roles.filter((r) => r.isActive).length, tone: 'green' },
+                ]}
+            />
 
-            {/* Table */}
-            <div className="table-card">
-                <div className="table-toolbar">
-                    <div className="toolbar-left">
-                        <p className="table-title">
-                            <Shield size={16} style={{ display: 'inline', marginRight: 6 }} />
-                            Danh sách Roles
-                            {isFetching && <span style={{ fontSize: 11, color: 'var(--text-muted)', marginLeft: 8 }}>Đang tải...</span>}
-                        </p>
-                    </div>
-                    <div className="toolbar-right">
-                        {(['all', 'active', 'inactive', 'deleted'] as const).map((f) => (
-                            <button
-                                key={f}
-                                className={`btn btn-sm ${filterStatus === f ? 'btn-primary' : 'btn-ghost'}`}
-                                onClick={() => { setFilterStatus(f); setPage(0); }}
-                            >
-                                {f === 'all' ? 'Tất cả' : f === 'active' ? 'Hoạt động' : f === 'inactive' ? 'Không HĐ' : 'Đã xóa'}
-                            </button>
-                        ))}
-                        <div className="toolbar-search">
-                            <Search size={14} className="toolbar-search-icon" />
-                            <input
-                                id="roles-search"
-                                className="toolbar-search-input"
-                                placeholder="Tìm mã, tên, mô tả…"
-                                value={search}
-                                onChange={(e) => { setSearch(e.target.value); setPage(0); }}
-                            />
-                        </div>
-                    </div>
-                </div>
-
+            <DataTable
+                title="Danh sách Roles"
+                titleIcon={Shield}
+                isFetching={isFetching}
+                toolbarRight={
+                    <>
+                        <EntityStatusFilters
+                            value={filterStatus}
+                            onChange={(v) => {
+                                setFilterStatus(v);
+                                setPage(0);
+                            }}
+                        />
+                        <SearchBox
+                            placeholder="Tìm mã, tên, mô tả…"
+                            value={search}
+                            onChange={(v) => {
+                                setSearch(v);
+                                setPage(0);
+                            }}
+                        />
+                    </>
+                }
+                pagination={
+                    meta
+                        ? {
+                              page,
+                              totalPages: Math.max(1, meta.totalPages),
+                              totalItems: meta.totalItems,
+                              itemLabel: 'roles',
+                              onPageChange: setPage,
+                          }
+                        : null
+                }
+            >
                 <table>
                     <thead>
                         <tr>
@@ -650,32 +621,7 @@ export default function RolesPage() {
                         )}
                     </tbody>
                 </table>
-
-                {/* Pagination */}
-                {meta && meta.totalPages > 1 && (
-                    <div className="pagination">
-                        <span className="page-info">
-                            Trang {page + 1} / {meta.totalPages} — {meta.totalItems} roles
-                        </span>
-                        <button className="page-btn" disabled={page === 0} onClick={() => setPage(page - 1)} id="prev-page">
-                            <ChevronLeft size={15} />
-                        </button>
-                        {Array.from({ length: Math.min(meta.totalPages, 7) }, (_, i) => (
-                            <button
-                                key={i}
-                                className={`page-btn ${i === page ? 'active' : ''}`}
-                                id={`page-${i}`}
-                                onClick={() => setPage(i)}
-                            >
-                                {i + 1}
-                            </button>
-                        ))}
-                        <button className="page-btn" disabled={page >= meta.totalPages - 1} onClick={() => setPage(page + 1)} id="next-page">
-                            <ChevronRight size={15} />
-                        </button>
-                    </div>
-                )}
-            </div>
+            </DataTable>
 
             {/* Modals */}
             {formModal.open && (
@@ -693,15 +639,7 @@ export default function RolesPage() {
                 />
             )}
 
-            {/* Toasts */}
-            <div className="toast-container">
-                {toasts.map((t) => (
-                    <div key={t.id} className={`toast toast-${t.type}`}>
-                        {t.type === 'success' ? <UserCheck size={16} /> : <UserX size={16} />}
-                        {t.msg}
-                    </div>
-                ))}
-            </div>
+            <ToastStack toasts={toasts} />
         </>
     );
 }

@@ -24,7 +24,7 @@ import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { logout } from '@/store/features/authSlice';
 import { clearStoredUser, clearTokens } from '@/utils/tokenStorage';
 import { getRoleCodes, hasRole } from '@/utils/roleUtils';
-import HrmGlobalStyles from '@/components/HrmGlobalStyles';
+import AppGlobalStyles from '@/components/AppGlobalStyles';
 
 type NavItem =
     | { label: string; isSection: true }
@@ -67,7 +67,7 @@ export default function HrLayout({ children }: { children: React.ReactNode }) {
 
     return (
         <div className="hrm-shell">
-            <HrmGlobalStyles />
+            <AppGlobalStyles />
 
             <aside className={`hrm-sidebar ${collapsed ? 'collapsed' : ''}`}>
                 <div className="sidebar-brand">

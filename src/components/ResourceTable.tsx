@@ -5,7 +5,7 @@ import React from 'react';
 type Row = Record<string, unknown>;
 type PaginationMeta = { page: number; totalPages: number; totalItems: number };
 
-export type HrColumnDef<T extends Row = Row> = {
+export type ColumnDef<T extends Row = Row> = {
     key: string;
     label: string;
     render?: (row: T) => React.ReactNode;
@@ -67,7 +67,7 @@ const isTechnicalIdKey = (key: string) => {
     return k === 'id' || k.endsWith('id') || k.includes('uuid') || k.includes('createdby') || k.includes('updatedby');
 };
 
-export default function HrResourceTable({
+export default function ResourceTable({
     rows,
     loading,
     columns,
@@ -75,18 +75,46 @@ export default function HrResourceTable({
 }: {
     rows: Row[];
     loading: boolean;
-    columns?: HrColumnDef[];
+    columns?: ColumnDef[];
     actions?: (row: Row) => React.ReactNode;
 }) {
     const autoColumns = rows.length > 0
         ? Object.keys(rows[0]).filter((k) => !isTechnicalIdKey(k)).slice(0, 6)
         : [];
-    const resolvedColumns: HrColumnDef[] = columns && columns.length
+    const resolvedColumns: ColumnDef[] = columns && columns.length
         ? columns
         : autoColumns.map((key) => ({ key, label: DEFAULT_LABELS[key] ?? key }));
 
     if (loading) {
-        return <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>Đang tải dữ liệu...</p>;
+        if (resolvedColumns.length === 0) {
+            return <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>Đang tải dữ liệu...</p>;
+        }
+        const colCount = resolvedColumns.length + (actions ? 1 : 0);
+        return (
+            <div style={{ overflowX: 'auto' }}>
+                <table>
+                    <thead>
+                        <tr>
+                            {resolvedColumns.map((column) => (
+                                <th key={column.key}>{column.label}</th>
+                            ))}
+                            {actions ? <th>Hành động</th> : null}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {Array.from({ length: 5 }).map((_, ri) => (
+                            <tr key={ri}>
+                                {Array.from({ length: colCount }).map((__, ci) => (
+                                    <td key={ci}>
+                                        <div className="skeleton" style={{ height: 14, width: ci === colCount - 1 ? 72 : '88%' }} />
+                                    </td>
+                                ))}
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+        );
     }
 
     if (rows.length === 0) {
@@ -120,3 +148,6 @@ export default function HrResourceTable({
         </div>
     );
 }
+
+/** @deprecated Use ColumnDef */
+export type HrColumnDef<T extends Row = Row> = ColumnDef<T>;

@@ -1,16 +1,19 @@
 'use client';
 import React from 'react';
-import { 
-    Users, 
-    Calendar, 
-    Clock, 
-    TrendingUp, 
-    AlertCircle, 
-    CheckCircle2, 
+import {
+    Users,
+    Calendar,
+    Clock,
+    TrendingUp,
+    AlertCircle,
+    CheckCircle2,
     ArrowUpRight,
     ArrowDownRight,
     Briefcase,
-    Activity
+    Activity,
+    Shield,
+    Key,
+    Settings,
 } from 'lucide-react';
 import { useAppSelector } from '@/store/hooks';
 
@@ -184,9 +187,3 @@ export default function DashboardPage() {
         </>
     );
 }
-
-// Re-using some types/icons from layout but locally defined icons for shortcuts
-type ShortcutIconProps = { size?: number; style?: React.CSSProperties };
-const Shield = ({ size, style }: ShortcutIconProps) => <Activity size={size} style={style} />; // Mock for demo
-const Key = ({ size, style }: ShortcutIconProps) => <TrendingUp size={size} style={style} />; // Mock for demo
-const Settings = ({ size, style }: ShortcutIconProps) => <Clock size={size} style={style} />; // Mock for demo

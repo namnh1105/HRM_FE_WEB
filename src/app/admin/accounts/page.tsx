@@ -3,7 +3,6 @@ import React, { useState, useMemo } from 'react';
 import {
     Users,
     Plus,
-    Search,
     Trash2,
     RotateCcw,
     ShieldCheck,
@@ -11,10 +10,6 @@ import {
     Lock,
     Unlock,
     X,
-    ChevronLeft,
-    ChevronRight,
-    UserCheck,
-    UserX,
 } from 'lucide-react';
 import {
     useGetAllUsersQuery,
@@ -30,16 +25,14 @@ import {
 import { useRegisterMutation } from '@/store/api/authApi';
 import { useGetActiveRolesQuery } from '@/store/api/roleApi';
 import type { UserResponse } from '@/types';
-
-function useToast() {
-    const [toasts, setToasts] = useState<{ id: number; msg: string; type: 'success' | 'error' }[]>([]);
-    const push = (msg: string, type: 'success' | 'error' = 'success') => {
-        const id = Date.now();
-        setToasts((p) => [...p, { id, msg, type }]);
-        setTimeout(() => setToasts((p) => p.filter((t) => t.id !== id)), 3500);
-    };
-    return { toasts, push };
-}
+import PageHeader from '@/components/ui/PageHeader';
+import StatCards from '@/components/ui/StatCards';
+import DataTable from '@/components/ui/DataTable';
+import { SearchBox } from '@/components/ui/ToolbarControls';
+import EntityStatusFilters, { type EntityFilterStatus } from '@/components/ui/EntityStatusFilters';
+import ConfirmModal from '@/components/ui/ConfirmModal';
+import ToastStack from '@/components/ToastStack';
+import { useToast } from '@/hooks/useToast';
 
 function RoleManagerModal({
     user,
@@ -154,42 +147,6 @@ function UserRolesCell({ userId }: { userId: string }) {
     );
 }
 
-function ConfirmModal({
-    title,
-    desc,
-    onConfirm,
-    onClose,
-    danger = false,
-}: {
-    title: string;
-    desc: string;
-    onConfirm: () => void;
-    onClose: () => void;
-    danger?: boolean;
-}) {
-    return (
-        <div className="modal-overlay" onClick={onClose}>
-            <div className="modal" style={{ maxWidth: 400 }} onClick={(e) => e.stopPropagation()}>
-                <div className="modal-header">
-                    <p className="modal-title">{title}</p>
-                    <button className="btn btn-icon btn-ghost" onClick={onClose}><X size={16} /></button>
-                </div>
-                <p style={{ fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.6 }}>{desc}</p>
-                <div className="modal-footer">
-                    <button className="btn btn-ghost" onClick={onClose}>Hủy</button>
-                    <button
-                        className={`btn ${danger ? 'btn-danger' : 'btn-primary'}`}
-                        id="confirm-action-btn"
-                        onClick={() => { onConfirm(); onClose(); }}
-                    >
-                        Xác nhận
-                    </button>
-                </div>
-            </div>
-        </div>
-    );
-}
-
 function CreateUserModal({
     onClose,
     pushToast,
@@ -293,7 +250,7 @@ export default function AccountsPage() {
     const PAGE_SIZE = 10;
     const [page, setPage] = useState(0);
     const [search, setSearch] = useState('');
-    const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'inactive' | 'deleted'>('all');
+    const [filterStatus, setFilterStatus] = useState<EntityFilterStatus>('all');
 
     const [deleteUser] = useDeleteUserMutation();
     const [restoreUser] = useRestoreUserMutation();
@@ -366,9 +323,9 @@ export default function AccountsPage() {
         } catch (err: unknown) {
             const msg =
                 typeof err === 'object' &&
-                err !== null &&
-                'data' in err &&
-                typeof (err as { data?: { message?: unknown } }).data?.message === 'string'
+                    err !== null &&
+                    'data' in err &&
+                    typeof (err as { data?: { message?: unknown } }).data?.message === 'string'
                     ? (err as { data: { message: string } }).data.message
                     : 'Khôi phục thất bại';
             pushToast(msg, 'error');
@@ -407,72 +364,60 @@ export default function AccountsPage() {
 
     return (
         <>
-            <div className="page-header">
-                <div>
-                    <h1 className="page-title">Quản lý tài khoản</h1>
-                    <p className="page-subtitle">Quản lý người dùng và vai trò hệ thống</p>
-                </div>
-                <button
-                    className="btn btn-primary"
-                    id="add-user-btn"
-                    onClick={() => setCreateUserOpen(true)}
-                >
-                    <Plus size={15} /> Thêm người dùng
-                </button>
-            </div>
+            <PageHeader
+                title="Quản lý tài khoản"
+                subtitle="Quản lý người dùng và vai trò hệ thống"
+                actions={
+                    <button type="button" className="btn btn-primary" id="add-user-btn" onClick={() => setCreateUserOpen(true)}>
+                        <Plus size={15} /> Thêm người dùng
+                    </button>
+                }
+            />
 
-            <div className="stat-grid">
-                <div className="stat-card">
-                    <p className="stat-label">Số lượng tài khoản</p>
-                    <p className="stat-value">{isLoading ? '—' : users.length}</p>
-                </div>
-                <div className="stat-card">
-                    <p className="stat-label">Đang hoạt động</p>
-                    <p className="stat-value" style={{ color: 'var(--green)' }}>{isLoading ? '—' : totalActive}</p>
-                </div>
-                <div className="stat-card">
-                    <p className="stat-label">Không hoạt động</p>
-                    <p className="stat-value" style={{ color: 'var(--amber)' }}>{isLoading ? '—' : totalInactive}</p>
-                </div>
-                <div className="stat-card">
-                    <p className="stat-label">Đã xóa</p>
-                    <p className="stat-value" style={{ color: 'var(--red)' }}>{isLoading ? '—' : totalDeleted}</p>
-                </div>
-            </div>
+            <StatCards
+                items={[
+                    { label: 'Số lượng tài khoản', value: isLoading ? '—' : users.length },
+                    { label: 'Đang hoạt động', value: isLoading ? '—' : totalActive, tone: 'green' },
+                    { label: 'Không hoạt động', value: isLoading ? '—' : totalInactive, tone: 'amber' },
+                    { label: 'Đã xóa', value: isLoading ? '—' : totalDeleted, tone: 'red' },
+                ]}
+            />
 
-            <div className="table-card">
-                <div className="table-toolbar">
-                    <div className="toolbar-left">
-                        <p className="table-title">
-                            <Users size={16} style={{ display: 'inline', marginRight: 6 }} />
-                            Danh sách tài khoản
-                            {isFetching && <span style={{ fontSize: 11, color: 'var(--text-muted)', marginLeft: 8 }}>Đang tải...</span>}
-                        </p>
-                    </div>
-                    <div className="toolbar-right">
-                        {(['all', 'active', 'inactive', 'deleted'] as const).map((f) => (
-                            <button
-                                key={f}
-                                id={`filter-${f}`}
-                                className={`btn btn-sm ${filterStatus === f ? 'btn-primary' : 'btn-ghost'}`}
-                                onClick={() => { setFilterStatus(f); setPage(0); }}
-                            >
-                                {f === 'all' ? 'Tất cả' : f === 'active' ? 'Hoạt động' : f === 'inactive' ? 'Không HĐ' : 'Đã xóa'}
-                            </button>
-                        ))}
-                        <div className="toolbar-search">
-                            <Search size={14} className="toolbar-search-icon" />
-                            <input
-                                id="accounts-search"
-                                className="toolbar-search-input"
-                                placeholder="Tìm email, tên, role…"
-                                value={search}
-                                onChange={(e) => { setSearch(e.target.value); setPage(0); }}
-                            />
-                        </div>
-                    </div>
-                </div>
-
+            <DataTable
+                title="Danh sách tài khoản"
+                titleIcon={Users}
+                isFetching={isFetching}
+                toolbarRight={
+                    <>
+                        <EntityStatusFilters
+                            value={filterStatus}
+                            onChange={(v) => {
+                                setFilterStatus(v);
+                                setPage(0);
+                            }}
+                        />
+                        <SearchBox
+                            placeholder="Tìm email, tên, role…"
+                            value={search}
+                            onChange={(v) => {
+                                setSearch(v);
+                                setPage(0);
+                            }}
+                        />
+                    </>
+                }
+                pagination={
+                    meta
+                        ? {
+                              page,
+                              totalPages: Math.max(1, meta.totalPages),
+                              totalItems: meta.totalItems,
+                              itemLabel: 'tài khoản',
+                              onPageChange: setPage,
+                          }
+                        : null
+                }
+            >
                 <table>
                     <thead>
                         <tr>
@@ -525,7 +470,7 @@ export default function AccountsPage() {
                                         ) : user.isActive ? (
                                             <span className="badge badge-green">Hoạt động</span>
                                         ) : (
-                                            <span className="badge badge-amber">Không HĐ</span>
+                                            <span className="badge badge-amber">Không hoạt động</span>
                                         )}
                                     </td>
                                     <td style={{ color: 'var(--text-muted)', fontSize: 12 }}>
@@ -590,31 +535,7 @@ export default function AccountsPage() {
                         )}
                     </tbody>
                 </table>
-
-                {meta && meta.totalPages > 1 && (
-                    <div className="pagination">
-                        <span className="page-info">
-                            Trang {page + 1} / {meta.totalPages} — {meta.totalItems} tài khoản
-                        </span>
-                        <button className="page-btn" disabled={page === 0} onClick={() => setPage(page - 1)} id="prev-page">
-                            <ChevronLeft size={15} />
-                        </button>
-                        {Array.from({ length: Math.min(meta.totalPages, 7) }, (_, i) => (
-                            <button
-                                key={i}
-                                className={`page-btn ${i === page ? 'active' : ''}`}
-                                id={`page-${i}`}
-                                onClick={() => setPage(i)}
-                            >
-                                {i + 1}
-                            </button>
-                        ))}
-                        <button className="page-btn" disabled={page >= meta.totalPages - 1} onClick={() => setPage(page + 1)} id="next-page">
-                            <ChevronRight size={15} />
-                        </button>
-                    </div>
-                )}
-            </div>
+            </DataTable>
 
             {roleManagerUser && (
                 <RoleManagerModal
@@ -639,14 +560,7 @@ export default function AccountsPage() {
                 />
             )}
 
-            <div className="toast-container">
-                {toasts.map((t) => (
-                    <div key={t.id} className={`toast toast-${t.type}`}>
-                        {t.type === 'success' ? <UserCheck size={16} /> : <UserX size={16} />}
-                        {t.msg}
-                    </div>
-                ))}
-            </div>
+            <ToastStack toasts={toasts} />
         </>
     );
 }

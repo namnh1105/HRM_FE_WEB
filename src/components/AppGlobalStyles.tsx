@@ -2,7 +2,7 @@
 
 import React from 'react';
 
-export default function HrmGlobalStyles() {
+export default function AppGlobalStyles() {
     return (
         <style jsx global>{`
             *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -494,6 +494,66 @@ export default function HrmGlobalStyles() {
             .page-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
             .page-info { font-size: 12px; color: var(--text-muted); margin-right: auto; }
 
+            .table-pagination-row {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                flex-wrap: wrap;
+                gap: 12px;
+                padding: 14px 20px;
+                border-top: 1px solid var(--border);
+            }
+            .table-pagination-info {
+                font-size: 12px;
+                color: var(--text-muted);
+            }
+            .table-pagination-nav {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                flex-wrap: wrap;
+            }
+            .table-pagination-btn {
+                min-width: 36px;
+                height: 36px;
+                padding: 0 8px;
+                border-radius: 8px;
+                background: #ffffff;
+                border: 1px solid var(--border);
+                color: var(--text-secondary);
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                cursor: pointer;
+                font-size: 13px;
+                font-weight: 500;
+                transition: background var(--transition), color var(--transition), border-color var(--transition);
+            }
+            .table-pagination-btn:hover:not(:disabled) {
+                background: var(--bg-elevated);
+                color: var(--accent);
+                border-color: rgba(59, 130, 246, 0.35);
+            }
+            .table-pagination-btn:disabled {
+                opacity: 0.45;
+                cursor: not-allowed;
+            }
+            .table-pagination-btn--num { min-width: 36px; }
+            .table-pagination-btn.is-active {
+                background: #3b9eff;
+                color: #ffffff;
+                border-color: #3b9eff;
+            }
+            .table-pagination-ellipsis {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                min-width: 28px;
+                color: var(--text-muted);
+                font-size: 13px;
+                user-select: none;
+            }
+
             .toast-container {
                 position: fixed;
                 bottom: 24px;
@@ -529,4 +589,3 @@ export default function HrmGlobalStyles() {
         `}</style>
     );
 }
-
