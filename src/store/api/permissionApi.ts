@@ -10,10 +10,10 @@ import {
 export const permissionApi = baseApi.injectEndpoints({
     endpoints: (builder) => ({
 
-        // GET /api/v1/permissions?page=&size=
-        getAllPermissions: builder.query<PaginatedApiResponse<PermissionResponse>, { page?: number; size?: number }>({
-            query: ({ page = 0, size = 50 } = {}) => ({
-                url: `permissions?page=${page}&size=${size}`,
+        // GET /api/v1/permissions?page=&size=&includeDeleted=
+        getAllPermissions: builder.query<PaginatedApiResponse<PermissionResponse>, { page?: number; size?: number; includeDeleted?: boolean }>({
+            query: ({ page = 0, size = 50, includeDeleted = false } = {}) => ({
+                url: `permissions?page=${page}&size=${size}&includeDeleted=${includeDeleted}`,
                 method: 'GET',
             }),
             providesTags: [{ type: 'Permission', id: 'LIST' }],
@@ -91,6 +91,12 @@ export const permissionApi = baseApi.injectEndpoints({
             query: (permissionId) => ({ url: `permissions/${permissionId}/deactivate`, method: 'POST' }),
             invalidatesTags: (_, __, id) => [{ type: 'Permission', id }, { type: 'Permission', id: 'LIST' }],
         }),
+
+        // POST /api/v1/permissions/:permissionId/restore
+        restorePermission: builder.mutation<ApiResponse<null>, string>({
+            query: (permissionId) => ({ url: `permissions/${permissionId}/restore`, method: 'POST' }),
+            invalidatesTags: (_, __, id) => [{ type: 'Permission', id }, { type: 'Permission', id: 'LIST' }],
+        }),
     }),
     overrideExisting: false,
 });
@@ -107,4 +113,5 @@ export const {
     useDeletePermissionMutation,
     useActivatePermissionMutation,
     useDeactivatePermissionMutation,
+    useRestorePermissionMutation,
 } = permissionApi;

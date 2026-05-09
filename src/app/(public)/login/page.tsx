@@ -53,7 +53,7 @@ export default function LoginPage() {
                         <div className="mx-auto w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-600 to-emerald-400 flex items-center justify-center shadow-lg shadow-emerald-900/20 mb-4">
                             <Building2 size={20} className="text-white" />
                         </div>
-                        <h1 className="text-xl font-black tracking-tight text-slate-900">WorkSphere HRM</h1>
+                        <h1 className="text-xl font-black tracking-tight text-slate-900">GiaKhanh HRM</h1>
                         <p className="text-xs text-slate-500 mt-1">Đăng nhập vào hệ thống quản trị</p>
                     </div>
 
@@ -120,7 +120,7 @@ export default function LoginPage() {
                     </form>
 
                     <p className="text-center text-[11px] text-slate-400 mt-6">
-                        WorkSphere © {new Date().getFullYear()} — Hệ thống quản lý nhân sự
+                        GiaKhanh © {new Date().getFullYear()} — Hệ thống quản lý nhân sự
                     </p>
                 </div>
             </div>

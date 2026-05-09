@@ -2,7 +2,7 @@
 export interface PageMeta {
   page: number;
   size: number;
-  totalElements: number;
+  totalItems: number;
   totalPages: number;
 }
 
@@ -10,7 +10,7 @@ export interface PaginatedApiResponse<T> {
   success: boolean;
   message: string;
   data: T[];
-  meta: PageMeta;
+  pagination: PageMeta;
 }
 
 // ─── User / Account ────────────────────────────────────────────

@@ -66,7 +66,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 {/* Logo */}
                 <div className="sidebar-brand">
                     <Building2 size={22} className="brand-icon" />
-                    {!collapsed && <span className="brand-text">WorkSphere</span>}
+                    {!collapsed && <span className="brand-text">GiaKhanh</span>}
                 </div>
 
                 {/* Nav */}

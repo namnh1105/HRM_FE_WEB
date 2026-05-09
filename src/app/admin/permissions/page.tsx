@@ -12,6 +12,7 @@ import {
     useDeletePermissionMutation,
     useActivatePermissionMutation,
     useDeactivatePermissionMutation,
+    useRestorePermissionMutation,
 } from '@/store/api/permissionApi';
 import type { PermissionResponse, CreatePermissionRequest, UpdatePermissionRequest } from '@/types';
 
@@ -117,24 +118,34 @@ function PermFormModal({ initial, onClose, pushToast }: {
 
 export default function PermissionsPage() {
     const [page, setPage] = useState(0);
-    const { data, isLoading, isFetching } = useGetAllPermissionsQuery({ page, size: 50 });
+    const [search, setSearch] = useState('');
+    const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'inactive' | 'deleted'>('all');
+    const [filterResource, setFilterResource] = useState('all');
+
+    const { data, isLoading, isFetching } = useGetAllPermissionsQuery({ 
+        page, 
+        size: 100, 
+        includeDeleted: filterStatus === 'all' || filterStatus === 'deleted' 
+    });
+    
     const [deletePermission] = useDeletePermissionMutation();
     const [activatePermission] = useActivatePermissionMutation();
     const [deactivatePermission] = useDeactivatePermissionMutation();
+    const [restorePermission] = useRestorePermissionMutation();
 
-    const [search, setSearch] = useState('');
-    const [filterResource, setFilterResource] = useState('all');
     const [formModal, setFormModal] = useState<{ open: boolean; perm?: PermissionResponse }>({ open: false });
     const { toasts, push: pushToast } = useToast();
 
     const perms = data?.data ?? [];
-    const meta  = data?.meta;
+    const meta = data?.pagination;
 
     const resources = useMemo(() => ['all', ...Array.from(new Set(perms.map(p => p.resource))).sort()], [perms]);
 
     const filtered = useMemo(() => {
-        let list = perms;
+        let list = [...perms];
+        
         if (filterResource !== 'all') list = list.filter(p => p.resource === filterResource);
+        
         if (search.trim()) {
             const q = search.toLowerCase();
             list = list.filter(p =>
@@ -144,8 +155,20 @@ export default function PermissionsPage() {
                 p.action.toLowerCase().includes(q)
             );
         }
+
+        if (filterStatus === 'active') list = list.filter(p => p.isActive && !p.isDeleted);
+        if (filterStatus === 'inactive') list = list.filter(p => !p.isActive && !p.isDeleted);
+        if (filterStatus === 'deleted') list = list.filter(p => p.isDeleted);
+
         return list;
-    }, [perms, search, filterResource]);
+    }, [perms, search, filterResource, filterStatus]);
+
+    const handleRestore = async (p: PermissionResponse) => {
+        try {
+            await restorePermission(p.id).unwrap();
+            pushToast('Đã khôi phục');
+        } catch { pushToast('Thất bại', 'error'); }
+    };
 
     // Local state for expanded/collapsed resources
     const [expandedResources, setExpandedResources] = useState<Set<string>>(new Set());
@@ -173,7 +196,6 @@ export default function PermissionsPage() {
     }, [grouped, search]);
 
     const handleDelete = async (p: PermissionResponse) => {
-        if (p.isSystem) { pushToast('Không thể xóa quyền hệ thống', 'error'); return; }
         if (!confirm(`Xóa quyền "${p.code}"?`)) return;
         try { await deletePermission(p.id).unwrap(); pushToast('Đã xóa'); }
         catch { pushToast('Xóa thất bại', 'error'); }
@@ -202,7 +224,7 @@ export default function PermissionsPage() {
             <div className="stat-grid">
                 <div className="stat-card">
                     <p className="stat-label">Tổng quyền</p>
-                    <p className="stat-value">{meta?.totalElements ?? perms.length}</p>
+                    <p className="stat-value">{meta?.totalItems ?? perms.length}</p>
                     <p className="stat-sub">Tất cả permissions</p>
                 </div>
                 <div className="stat-card">
@@ -233,14 +255,23 @@ export default function PermissionsPage() {
                         </p>
                     </div>
                     <div className="toolbar-right" style={{flexWrap:'wrap'}}>
+                        {(['all', 'active', 'inactive', 'deleted'] as const).map((f) => (
+                            <button
+                                key={f}
+                                className={`btn btn-sm ${filterStatus === f ? 'btn-primary' : 'btn-ghost'}`}
+                                onClick={() => { setFilterStatus(f); setPage(0); }}
+                            >
+                                {f === 'all' ? 'Tất cả' : f === 'active' ? 'Hoạt động' : f === 'inactive' ? 'Không HĐ' : 'Đã xóa'}
+                            </button>
+                        ))}
                         <select id="filter-resource" className="field-input" style={{width:'auto',padding:'6px 10px',fontSize:12}}
-                            value={filterResource} onChange={e => setFilterResource(e.target.value)}>
+                            value={filterResource} onChange={e => { setFilterResource(e.target.value); setPage(0); }}>
                             {resources.map(r => <option key={r} value={r}>{r === 'all' ? 'Tất cả Resource' : r}</option>)}
                         </select>
                         <div className="toolbar-search">
                             <Search size={14} className="toolbar-search-icon"/>
                             <input id="perms-search" className="toolbar-search-input" placeholder="Tìm quyền…"
-                                value={search} onChange={e => setSearch(e.target.value)}/>
+                                value={search} onChange={e => { setSearch(e.target.value); setPage(0); }}/>
                         </div>
                     </div>
                 </div>
@@ -267,9 +298,10 @@ export default function PermissionsPage() {
                                 >
                                     <div style={{ 
                                         width: 20, height: 20, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                        transition: 'transform 0.2s', transform: isExpanded ? 'rotate(0deg)' : 'rotate(-90deg)'
+                                        transition: 'transform 0.2s', transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)',
+                                        color: isExpanded ? 'var(--accent-light)' : 'var(--text-muted)'
                                     }}>
-                                        <ChevronDown size={14} />
+                                        <ChevronRight size={14} />
                                     </div>
                                     <span style={{fontSize:11,fontWeight:700,letterSpacing:'0.07em',
                                         textTransform:'uppercase',color:'var(--accent-light)', flex: 1}}>
@@ -307,13 +339,17 @@ export default function PermissionsPage() {
                                                             : <span className="badge badge-gray">Tùy chỉnh</span>}
                                                     </td>
                                                     <td>
-                                                        {perm.isActive
-                                                            ? <span className="badge badge-green">Hoạt động</span>
-                                                            : <span className="badge badge-amber">Đã khóa</span>}
+                                                        {perm.isDeleted ? (
+                                                            <span className="badge badge-red">Đã xóa</span>
+                                                        ) : perm.isActive ? (
+                                                            <span className="badge badge-green">Hoạt động</span>
+                                                        ) : (
+                                                            <span className="badge badge-amber">Vô hiệu</span>
+                                                        )}
                                                     </td>
                                                     <td>
                                                         <div style={{display:'flex',gap:6}}>
-                                                            {!perm.isSystem ? (
+                                                            {!perm.isDeleted ? (
                                                                 <>
                                                                     <button className="btn btn-icon btn-ghost" title="Cập nhật"
                                                                         id={`edit-perm-${perm.id}`}
@@ -335,7 +371,12 @@ export default function PermissionsPage() {
                                                                     </button>
                                                                 </>
                                                             ) : (
-                                                                <span style={{ fontSize: 11, color: 'var(--text-muted)', paddingLeft: 8 }}>Mặc định</span>
+                                                                <button className="btn btn-icon btn-ghost" title="Khôi phục"
+                                                                    id={`restore-perm-${perm.id}`}
+                                                                    onClick={(e) => { e.stopPropagation(); handleRestore(perm); }}
+                                                                    style={{ color: 'var(--blue)' }}>
+                                                                    <RotateCcw size={15}/>
+                                                                </button>
                                                             )}
                                                         </div>
                                                     </td>
@@ -352,7 +393,7 @@ export default function PermissionsPage() {
                 {/* Pagination (for large datasets) */}
                 {meta && meta.totalPages > 1 && (
                     <div className="pagination">
-                        <span className="page-info">Trang {page+1}/{meta.totalPages} — {meta.totalElements} quyền</span>
+                        <span className="page-info">Trang {page+1}/{meta.totalPages} — {meta.totalItems} quyền</span>
                         <button className="page-btn" disabled={page===0} id="prev-page" onClick={() => setPage(p=>p-1)}>
                             <ChevronLeft size={15}/>
                         </button>

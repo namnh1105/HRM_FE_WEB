@@ -10,10 +10,10 @@ import {
 export const roleApi = baseApi.injectEndpoints({
     endpoints: (builder) => ({
 
-        // GET /api/v1/roles?page=&size=
-        getAllRoles: builder.query<PaginatedApiResponse<RoleResponse>, { page?: number; size?: number }>({
-            query: ({ page = 0, size = 20 } = {}) => ({
-                url: `roles?page=${page}&size=${size}`,
+        // GET /api/v1/roles?page=&size=&includeDeleted=
+        getAllRoles: builder.query<PaginatedApiResponse<RoleResponse>, { page?: number; size?: number; includeDeleted?: boolean }>({
+            query: ({ page = 0, size = 20, includeDeleted = false } = {}) => ({
+                url: `roles?page=${page}&size=${size}&includeDeleted=${includeDeleted}`,
                 method: 'GET',
             }),
             providesTags: [{ type: 'Role', id: 'LIST' }],
@@ -92,13 +92,28 @@ export const roleApi = baseApi.injectEndpoints({
         }),
         
         // PUT /api/v1/roles/:roleId/permissions
+        getRolePermissions: builder.query<ApiResponse<PermissionResponse[]>, string>({
+            query: (roleId) => ({ url: `roles/${roleId}/permissions`, method: 'GET' }),
+            providesTags: (_, __, id) => [{ type: 'Role', id: `PERMS-${id}` }],
+        }),
+
         syncPermissionsToRole: builder.mutation<ApiResponse<null>, { roleId: string; permissionIds: string[] }>({
             query: ({ roleId, permissionIds }) => ({
                 url: `roles/${roleId}/permissions`,
                 method: 'PUT',
                 body: { roleId, permissionIds },
             }),
-            invalidatesTags: (_, __, { roleId }) => [{ type: 'Role', id: roleId }, { type: 'Role', id: 'LIST' }],
+            invalidatesTags: (_, __, { roleId }) => [
+                { type: 'Role', id: roleId }, 
+                { type: 'Role', id: 'LIST' },
+                { type: 'Role', id: `PERMS-${roleId}` }
+            ],
+        }),
+
+        // POST /api/v1/roles/:roleId/restore
+        restoreRole: builder.mutation<ApiResponse<null>, string>({
+            query: (roleId) => ({ url: `roles/${roleId}/restore`, method: 'POST' }),
+            invalidatesTags: (_, __, roleId) => [{ type: 'Role', id: roleId }, { type: 'Role', id: 'LIST' }],
         }),
     }),
     overrideExisting: false,
@@ -114,7 +129,9 @@ export const {
     useDeleteRoleMutation,
     useActivateRoleMutation,
     useDeactivateRoleMutation,
+    useRestoreRoleMutation,
     useAssignPermissionsToRoleMutation,
     useRemovePermissionsFromRoleMutation,
+    useGetRolePermissionsQuery,
     useSyncPermissionsToRoleMutation,
 } = roleApi;

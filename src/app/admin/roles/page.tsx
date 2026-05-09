@@ -7,7 +7,9 @@ import {
     useDeleteRoleMutation,
     useActivateRoleMutation,
     useDeactivateRoleMutation,
+    useRestoreRoleMutation,
     useGetRoleByIdQuery,
+    useGetRolePermissionsQuery,
     useSyncPermissionsToRoleMutation,
 } from '@/store/api/roleApi';
 import {
@@ -158,11 +160,11 @@ function PermissionManagerModal({
     onClose: () => void;
     pushToast: (msg: string, type?: 'success' | 'error') => void;
 }) {
-    const { data: roleData, isLoading: roleLoading } = useGetRoleByIdQuery(role.id);
+    const { data: roleData, isLoading: roleLoading } = useGetRolePermissionsQuery(role.id);
     const { data: allPermsData, isLoading: permsLoading } = useGetActivePermissionsQuery();
     const [syncPermissions, { isLoading: saving }] = useSyncPermissionsToRoleMutation();
     const [permSearch, setPermSearch] = useState('');
-    
+
     // Local state for selected permission IDs
     const [selectedIds, setSelectedIds] = useState<Set<string>>(() => {
         const perms = role.permissions ?? [];
@@ -172,13 +174,23 @@ function PermissionManagerModal({
         }).filter(Boolean));
     });
 
+    const [initialized, setInitialized] = useState(false);
+
     // Sync local state when roleData (full fetch) is loaded
     React.useEffect(() => {
-        if (roleData?.data?.permissions) {
-            const ids = roleData.data.permissions.map(p => p.id);
+        if (!initialized && roleData?.data && Array.isArray(roleData.data)) {
+            console.log('Role permissions loaded:', roleData.data.length);
+            const ids = roleData.data.map(p => String(p.id));
             setSelectedIds(new Set(ids));
+            setInitialized(true);
         }
-    }, [roleData]);
+    }, [roleData, initialized]);
+
+    React.useEffect(() => {
+        if (allPermsData?.data) {
+            console.log('All permissions loaded:', allPermsData.data.length);
+        }
+    }, [allPermsData]);
 
     const filteredPerms = useMemo(() => {
         const all = allPermsData?.data ?? [];
@@ -231,9 +243,9 @@ function PermissionManagerModal({
 
     const handleSave = async () => {
         try {
-            await syncPermissions({ 
-                roleId: role.id, 
-                permissionIds: Array.from(selectedIds) 
+            await syncPermissions({
+                roleId: role.id,
+                permissionIds: Array.from(selectedIds)
             }).unwrap();
             pushToast('Đã cập nhật danh sách quyền');
             onClose();
@@ -257,7 +269,7 @@ function PermissionManagerModal({
                     </div>
                     <button className="btn btn-icon btn-ghost" onClick={onClose}><X size={16} /></button>
                 </div>
-                
+
                 <div style={{ marginBottom: 12 }}>
                     <div className="toolbar-search" style={{ width: '100%' }}>
                         <Search size={14} className="toolbar-search-icon" />
@@ -284,57 +296,82 @@ function PermissionManagerModal({
                             const isExpanded = expandedResources.has(resource) || !!permSearch;
                             return (
                                 <div key={resource} style={{ borderBottom: '1px solid var(--border-subtle)', paddingBottom: 8 }}>
-                                    <div 
-                                        style={{ 
+                                    <div
+                                        style={{
                                             display: 'flex', alignItems: 'center', gap: 8, padding: '8px 4px',
                                             cursor: 'pointer', userSelect: 'none'
                                         }}
                                         onClick={() => toggleResource(resource)}
                                     >
-                                        {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                                        <div style={{
+                                            transition: 'transform 0.2s', transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)',
+                                            color: isExpanded ? 'var(--accent-light)' : 'var(--text-muted)'
+                                        }}>
+                                            <ChevronRight size={14} />
+                                        </div>
                                         <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--accent-light)', flex: 1 }}>
                                             {resource}
                                         </p>
                                         <span className="badge badge-gray" style={{ fontSize: 9 }}>{perms.length}</span>
                                     </div>
-                                    
+
                                     {isExpanded && (
-                                        <div style={{ 
-                                            display: 'grid', 
-                                            gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', 
-                                            gap: 8, 
+                                        <div style={{
+                                            display: 'grid',
+                                            gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+                                            gap: 8,
                                             marginTop: 8,
                                             paddingLeft: 22
                                         }}>
                                             {perms.map((perm) => {
-                                                const has = selectedIds.has(perm.id);
+                                                const pId = String(perm.id);
+                                                const has = selectedIds.has(pId);
                                                 return (
                                                     <div
-                                                        key={perm.id}
+                                                        key={pId}
                                                         style={{
                                                             display: 'flex',
                                                             alignItems: 'center',
-                                                            gap: 10,
-                                                            padding: '10px 12px',
-                                                            borderRadius: 8,
-                                                            background: has ? 'var(--accent-glow)' : 'var(--bg-elevated)',
+                                                            gap: 12,
+                                                            padding: '12px 14px',
+                                                            borderRadius: 10,
+                                                            background: has ? 'var(--accent-glow)' : 'var(--bg-card)',
                                                             cursor: 'pointer',
-                                                            border: `1px solid ${has ? 'var(--accent-light)' : 'var(--border)'}`,
-                                                            transition: 'all 0.15s',
+                                                            border: `1.5px solid ${has ? 'var(--accent-light)' : 'var(--border-subtle)'}`,
+                                                            transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                                                            boxShadow: has ? '0 4px 12px var(--accent-glow)' : 'none',
                                                         }}
-                                                        id={`toggle-perm-${perm.id}`}
-                                                        onClick={() => handleToggle(perm.id)}
+                                                        id={`toggle-perm-${pId}`}
+                                                        onClick={(e) => {
+                                                            e.preventDefault();
+                                                            handleToggle(pId);
+                                                        }}
                                                     >
-                                                        {has ? (
-                                                            <CheckSquare size={16} style={{ color: 'var(--accent-light)', flexShrink: 0 }} />
-                                                        ) : (
-                                                            <Square size={16} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
-                                                        )}
+                                                        <div style={{
+                                                            width: 22, height: 22, borderRadius: 6,
+                                                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                            background: has ? 'var(--accent-light)' : '#fff',
+                                                            border: `2.5px solid ${has ? 'var(--accent-light)' : 'var(--border)'}`,
+                                                            transition: 'all 0.2s',
+                                                            flexShrink: 0,
+                                                            boxShadow: has ? '0 0 0 2px var(--accent-glow)' : 'none'
+                                                        }}>
+                                                            {has && <CheckSquare size={16} style={{ color: '#fff' }} />}
+                                                        </div>
                                                         <div style={{ flex: 1, minWidth: 0 }}>
-                                                            <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-primary)', marginBottom: 2 }}>
+                                                            <p style={{
+                                                                fontSize: 13,
+                                                                fontWeight: 600,
+                                                                color: has ? 'var(--accent-light)' : 'var(--text-primary)',
+                                                                marginBottom: 2
+                                                            }}>
                                                                 {perm.displayName}
                                                             </p>
-                                                            <code style={{ fontSize: 10, color: 'var(--text-muted)' }}>{perm.code}</code>
+                                                            <code style={{
+                                                                fontSize: 10,
+                                                                color: 'var(--text-muted)',
+                                                                opacity: 0.8
+                                                            }}>{perm.code}</code>
                                                         </div>
                                                     </div>
                                                 );
@@ -361,29 +398,46 @@ function PermissionManagerModal({
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function RolesPage() {
     const [page, setPage] = useState(0);
-    const { data, isLoading, isFetching } = useGetAllRolesQuery({ page, size: 10 });
+    const [search, setSearch] = useState('');
+    const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'inactive' | 'deleted'>('all');
+
+    const { data, isLoading, isFetching } = useGetAllRolesQuery({
+        page,
+        size: 20,
+        includeDeleted: filterStatus === 'all' || filterStatus === 'deleted'
+    });
+
     const [deleteRole] = useDeleteRoleMutation();
     const [activateRole] = useActivateRoleMutation();
     const [deactivateRole] = useDeactivateRoleMutation();
+    const [restoreRole] = useRestoreRoleMutation();
 
-    const [search, setSearch] = useState('');
     const [formModal, setFormModal] = useState<{ open: boolean; role?: RoleResponse }>({ open: false });
     const [permModal, setPermModal] = useState<RoleResponse | null>(null);
     const { toasts, push: pushToast } = useToast();
 
     const roles = data?.data ?? [];
-    const meta = data?.meta;
+    const meta = data?.pagination;
 
     const filtered = useMemo(() => {
-        if (!search.trim()) return roles;
+        let list = [...roles];
         const q = search.toLowerCase();
-        return roles.filter(
-            (r) =>
-                r.code.toLowerCase().includes(q) ||
-                r.displayName.toLowerCase().includes(q) ||
-                r.description?.toLowerCase().includes(q)
-        );
-    }, [roles, search]);
+
+        if (q) {
+            list = list.filter(
+                (r) =>
+                    r.code.toLowerCase().includes(q) ||
+                    r.displayName.toLowerCase().includes(q) ||
+                    r.description?.toLowerCase().includes(q)
+            );
+        }
+
+        if (filterStatus === 'active') list = list.filter(r => r.isActive && !r.isDeleted);
+        if (filterStatus === 'inactive') list = list.filter(r => !r.isActive && !r.isDeleted);
+        if (filterStatus === 'deleted') list = list.filter(r => r.isDeleted);
+
+        return list;
+    }, [roles, search, filterStatus]);
 
     const handleDelete = async (role: RoleResponse) => {
         if (!confirm(`Xóa role "${role.displayName}"?`)) return;
@@ -392,6 +446,15 @@ export default function RolesPage() {
             pushToast('Đã xóa role');
         } catch {
             pushToast('Xóa thất bại', 'error');
+        }
+    };
+
+    const handleRestore = async (role: RoleResponse) => {
+        try {
+            await restoreRole(role.id).unwrap();
+            pushToast('Đã khôi phục role');
+        } catch {
+            pushToast('Khôi phục thất bại', 'error');
         }
     };
 
@@ -424,23 +487,14 @@ export default function RolesPage() {
             {/* Stats */}
             <div className="stat-grid">
                 <div className="stat-card">
-                    <p className="stat-label">Tổng Roles</p>
-                    <p className="stat-value">{meta?.totalElements ?? '—'}</p>
-                    <p className="stat-sub">Tất cả vai trò</p>
+                    <p className="stat-label">Số lượng vai trò</p>
+                    <p className="stat-value">{meta?.totalItems ?? '—'}</p>
                 </div>
                 <div className="stat-card">
                     <p className="stat-label">Đang hoạt động</p>
                     <p className="stat-value" style={{ color: 'var(--green)' }}>
                         {roles.filter((r) => r.isActive).length}
                     </p>
-                    <p className="stat-sub">Roles kích hoạt</p>
-                </div>
-                <div className="stat-card">
-                    <p className="stat-label">Hệ thống</p>
-                    <p className="stat-value" style={{ color: 'var(--accent-light)' }}>
-                        {roles.filter((r) => r.isSystem).length}
-                    </p>
-                    <p className="stat-sub">Built-in roles</p>
                 </div>
             </div>
 
@@ -455,14 +509,23 @@ export default function RolesPage() {
                         </p>
                     </div>
                     <div className="toolbar-right">
+                        {(['all', 'active', 'inactive', 'deleted'] as const).map((f) => (
+                            <button
+                                key={f}
+                                className={`btn btn-sm ${filterStatus === f ? 'btn-primary' : 'btn-ghost'}`}
+                                onClick={() => { setFilterStatus(f); setPage(0); }}
+                            >
+                                {f === 'all' ? 'Tất cả' : f === 'active' ? 'Hoạt động' : f === 'inactive' ? 'Không HĐ' : 'Đã xóa'}
+                            </button>
+                        ))}
                         <div className="toolbar-search">
                             <Search size={14} className="toolbar-search-icon" />
                             <input
                                 id="roles-search"
                                 className="toolbar-search-input"
-                                placeholder="Tìm role…"
+                                placeholder="Tìm mã, tên, mô tả…"
                                 value={search}
-                                onChange={(e) => setSearch(e.target.value)}
+                                onChange={(e) => { setSearch(e.target.value); setPage(0); }}
                             />
                         </div>
                     </div>
@@ -528,15 +591,17 @@ export default function RolesPage() {
                                         )}
                                     </td>
                                     <td>
-                                        {role.isActive ? (
+                                        {role.isDeleted ? (
+                                            <span className="badge badge-red">Đã xóa</span>
+                                        ) : role.isActive ? (
                                             <span className="badge badge-green">Hoạt động</span>
                                         ) : (
-                                            <span className="badge badge-red">Vô hiệu</span>
+                                            <span className="badge badge-amber">Vô hiệu</span>
                                         )}
                                     </td>
                                     <td>
                                         <div style={{ display: 'flex', gap: 6 }}>
-                                            {!role.isSystem ? (
+                                            {!role.isDeleted ? (
                                                 <>
                                                     <button
                                                         className="btn btn-icon btn-ghost"
@@ -566,7 +631,15 @@ export default function RolesPage() {
                                                     </button>
                                                 </>
                                             ) : (
-                                                <span style={{ fontSize: 11, color: 'var(--text-muted)', paddingLeft: 8 }}>Mặc định</span>
+                                                <button
+                                                    className="btn btn-icon btn-ghost"
+                                                    title="Khôi phục"
+                                                    id={`restore-role-${role.id}`}
+                                                    onClick={() => handleRestore(role)}
+                                                    style={{ color: 'var(--blue)' }}
+                                                >
+                                                    <RotateCcw size={15} />
+                                                </button>
                                             )}
                                         </div>
                                     </td>
@@ -580,7 +653,7 @@ export default function RolesPage() {
                 {meta && meta.totalPages > 1 && (
                     <div className="pagination">
                         <span className="page-info">
-                            Trang {page + 1} / {meta.totalPages} — {meta.totalElements} roles
+                            Trang {page + 1} / {meta.totalPages} — {meta.totalItems} roles
                         </span>
                         <button className="page-btn" disabled={page === 0} onClick={() => setPage(page - 1)} id="prev-page">
                             <ChevronLeft size={15} />
