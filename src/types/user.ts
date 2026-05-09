@@ -1,8 +1,20 @@
-export type UserResponseDTO = {
-    id : string;
-    username : string;
-    givenName : string;
-    familyName : string;
-    created_at? : Date;
-    updated_at? : Date;
-}
+export type UserInfo = {
+    id: string;
+    email?: string;
+    username?: string;
+    givenName?: string;
+    familyName?: string;
+    avatarUrl?: string | null;
+    employee?: any;
+    roles: string[];
+    permissions: string[];
+    isActive?: boolean;
+    isDeleted?: boolean;
+    createdAt?: string;
+    updatedAt?: string;
+    createdBy?: string | null;
+    updatedBy?: string | null;
+    deletedAt?: string | null;
+    deletedBy?: string | null;
+    storeId?: string | null;
+};

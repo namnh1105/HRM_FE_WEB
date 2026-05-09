@@ -1,10 +1,12 @@
-import { AuthResponseDTO } from './auth';
+import { UserInfo } from './user';
 
 export interface AuthState {
     accessToken: string | null;
     refreshToken: string | null;
-    user: AuthResponseDTO['user'] | null;
+    user: UserInfo | null;
     isAuthenticated: boolean;
+    roles: string[];
+    permissions: string[];
 }
 
 export interface RootState {

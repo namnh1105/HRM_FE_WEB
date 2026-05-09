@@ -1,7 +1,7 @@
-import {UserResponseDTO} from './user'
+import { UserInfo } from './user'
 
 export type LoginDTO = {
-    username : string;
+    email : string;
     password : string;
 }
 
@@ -19,6 +19,6 @@ export type RegisterDTO = {
 export type AuthResponseDTO = {
     accessToken: string;
     refreshToken: string;
-    user: UserResponseDTO;
+    user: UserInfo;
 }
 
