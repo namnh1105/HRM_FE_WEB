@@ -40,10 +40,11 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
             else {
                 // Token/user state exists but doesn't map to any supported app area.
                 // Keep /login usable so user can re-auth as another account.
-                if (isLoginPage) {
+                if (isLoginPage || isRootPage) {
                     clearTokens();
                     clearStoredUser();
                     dispatch(logout());
+                    router.replace('/login');
                 } else {
                     router.replace('/403');
                 }
