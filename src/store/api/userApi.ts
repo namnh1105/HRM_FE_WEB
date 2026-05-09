@@ -1,15 +1,47 @@
 import { baseApi } from './baseApi';
 import {
     ApiResponse,
+    PaginatedApiResponse,
     UserResponse,
 } from '@/types';
+
+type RawUserLike = Partial<UserResponse> & {
+    role_codes?: unknown;
+    roleCodes?: unknown;
+    permission_codes?: unknown;
+    permissionCodes?: unknown;
+};
+
+const toStringArray = (value: unknown): string[] =>
+    Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : [];
+
+const normalizeUser = (user: RawUserLike): UserResponse => ({
+    ...(user as UserResponse),
+    roles: toStringArray(user.roles).length
+        ? toStringArray(user.roles)
+        : toStringArray(user.role_codes).length
+            ? toStringArray(user.role_codes)
+            : toStringArray(user.roleCodes),
+    permissions: toStringArray(user.permissions).length
+        ? toStringArray(user.permissions)
+        : toStringArray(user.permission_codes).length
+            ? toStringArray(user.permission_codes)
+            : toStringArray(user.permissionCodes),
+});
 
 export const userApi = baseApi.injectEndpoints({
     endpoints: (builder) => ({
 
-        // GET /api/v1/users/all?includeDeleted=true
-        getAllUsers: builder.query<ApiResponse<UserResponse[]>, void>({
-            query: () => ({ url: 'users/all?includeDeleted=true', method: 'GET' }),
+        // GET /api/v1/users?page=&size=&includeDeleted=
+        getAllUsers: builder.query<PaginatedApiResponse<UserResponse>, { page?: number; size?: number; includeDeleted?: boolean }>({
+            query: ({ page = 0, size = 10, includeDeleted = true } = {}) => ({
+                url: `users?page=${page}&size=${size}&includeDeleted=${includeDeleted}`,
+                method: 'GET',
+            }),
+            transformResponse: (response: PaginatedApiResponse<RawUserLike>) => ({
+                ...response,
+                data: (response.data ?? []).map(normalizeUser),
+            }),
             providesTags: (result) =>
                 result?.data
                     ? [
@@ -22,12 +54,20 @@ export const userApi = baseApi.injectEndpoints({
         // GET /api/v1/users/me
         getMe: builder.query<ApiResponse<UserResponse>, void>({
             query: () => ({ url: 'users/me', method: 'GET' }),
+            transformResponse: (response: ApiResponse<RawUserLike>) => ({
+                ...response,
+                data: normalizeUser(response.data),
+            }),
             providesTags: [{ type: 'User', id: 'ME' }],
         }),
 
         // GET /api/v1/users/:id
         getUserById: builder.query<ApiResponse<UserResponse>, string>({
             query: (userId) => ({ url: `users/${userId}`, method: 'GET' }),
+            transformResponse: (response: ApiResponse<RawUserLike>) => ({
+                ...response,
+                data: normalizeUser(response.data),
+            }),
             providesTags: (_, __, id) => [{ type: 'User', id }],
         }),
 

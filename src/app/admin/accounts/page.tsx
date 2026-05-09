@@ -131,6 +131,29 @@ function RoleManagerModal({
     );
 }
 
+function UserRolesCell({ userId }: { userId: string }) {
+    const { data: userRolesData, isLoading } = useGetUserRolesQuery(userId);
+    const roleNames = (userRolesData?.data ?? [])
+        .map((assignment) => assignment.role?.code || assignment.role?.displayName)
+        .filter((value): value is string => Boolean(value));
+
+    if (isLoading) {
+        return <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>Đang tải...</span>;
+    }
+
+    if (roleNames.length === 0) {
+        return <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>Chưa có</span>;
+    }
+
+    return (
+        <>
+            {roleNames.map((role) => (
+                <span key={role} className="badge badge-blue">{role}</span>
+            ))}
+        </>
+    );
+}
+
 function ConfirmModal({
     title,
     desc,
@@ -267,17 +290,22 @@ function CreateUserModal({
 }
 
 export default function AccountsPage() {
-    const { data, isLoading, isFetching } = useGetAllUsersQuery();
+    const PAGE_SIZE = 10;
+    const [page, setPage] = useState(0);
+    const [search, setSearch] = useState('');
+    const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'inactive' | 'deleted'>('all');
+
     const [deleteUser] = useDeleteUserMutation();
     const [restoreUser] = useRestoreUserMutation();
     const [permanentDelete] = usePermanentDeleteUserMutation();
     const [activateUser] = useActivateUserMutation();
     const [deactivateUser] = useDeactivateUserMutation();
 
-    const [search, setSearch] = useState('');
-    const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'inactive' | 'deleted'>('all');
-    const [page, setPage] = useState(0);
-    const PAGE_SIZE = 10;
+    const { data, isLoading, isFetching } = useGetAllUsersQuery({
+        page,
+        size: PAGE_SIZE,
+        includeDeleted: filterStatus === 'all' || filterStatus === 'deleted',
+    });
 
     const [roleManagerUser, setRoleManagerUser] = useState<UserResponse | null>(null);
     const [confirmAction, setConfirmAction] = useState<null | {
@@ -291,6 +319,7 @@ export default function AccountsPage() {
     const { toasts, push: pushToast } = useToast();
 
     const users = data?.data ?? [];
+    const meta = data?.pagination;
 
     const totalActive = users.filter((u) => u.isActive && !u.isDeleted).length;
     const totalInactive = users.filter((u) => !u.isActive && !u.isDeleted).length;
@@ -313,9 +342,6 @@ export default function AccountsPage() {
         }
         return list;
     }, [users, search, filterStatus]);
-
-    const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
-    const paged = filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
 
     const handleDelete = (user: UserResponse) => {
         setConfirmAction({
@@ -467,7 +493,7 @@ export default function AccountsPage() {
                                     ))}
                                 </tr>
                             ))
-                        ) : paged.length === 0 ? (
+                        ) : filtered.length === 0 ? (
                             <tr>
                                 <td colSpan={6}>
                                     <div className="empty-state">
@@ -477,7 +503,7 @@ export default function AccountsPage() {
                                 </td>
                             </tr>
                         ) : (
-                            paged.map((user) => (
+                            filtered.map((user) => (
                                 <tr key={user.id}>
                                     <td>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -490,13 +516,7 @@ export default function AccountsPage() {
                                     <td>{user.employee?.fullName ?? <span style={{ color: 'var(--text-muted)' }}>—</span>}</td>
                                     <td>
                                         <div className="role-list">
-                                            {(user.roles ?? []).length === 0 ? (
-                                                <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>Chưa có</span>
-                                            ) : (
-                                                user.roles.map((r) => (
-                                                    <span key={r} className="badge badge-blue">{r}</span>
-                                                ))
-                                            )}
+                                            <UserRolesCell userId={user.id} />
                                         </div>
                                     </td>
                                     <td>
@@ -571,15 +591,15 @@ export default function AccountsPage() {
                     </tbody>
                 </table>
 
-                {totalPages > 1 && (
+                {meta && meta.totalPages > 1 && (
                     <div className="pagination">
                         <span className="page-info">
-                            {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, filtered.length)} / {filtered.length}
+                            Trang {page + 1} / {meta.totalPages} — {meta.totalItems} tài khoản
                         </span>
                         <button className="page-btn" disabled={page === 0} onClick={() => setPage(page - 1)} id="prev-page">
                             <ChevronLeft size={15} />
                         </button>
-                        {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => (
+                        {Array.from({ length: Math.min(meta.totalPages, 7) }, (_, i) => (
                             <button
                                 key={i}
                                 className={`page-btn ${i === page ? 'active' : ''}`}
@@ -589,7 +609,7 @@ export default function AccountsPage() {
                                 {i + 1}
                             </button>
                         ))}
-                        <button className="page-btn" disabled={page >= totalPages - 1} onClick={() => setPage(page + 1)} id="next-page">
+                        <button className="page-btn" disabled={page >= meta.totalPages - 1} onClick={() => setPage(page + 1)} id="next-page">
                             <ChevronRight size={15} />
                         </button>
                     </div>
