@@ -3,15 +3,16 @@ import React, { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { mapToUserInfo, restoreAuth } from '@/store/features/authSlice';
-import { getStoredUser, restoreAccessToken, getRefreshToken } from '@/utils/tokenStorage';
+import { clearStoredUser, clearTokens, getStoredUser, restoreAccessToken, getRefreshToken } from '@/utils/tokenStorage';
 import { getRoleCodes, hasRole } from '@/utils/roleUtils';
+import { logout } from '@/store/features/authSlice';
 
 export default function AuthProvider({ children }: { children: React.ReactNode }) {
     const dispatch = useAppDispatch();
     const router = useRouter();
     const pathname = usePathname();
     const [isInitialized, setIsInitialized] = useState(false);
-    const { isAuthenticated } = useAppSelector((s) => s.auth || { isAuthenticated: false });
+    const { isAuthenticated, user } = useAppSelector((s) => s.auth || { isAuthenticated: false, user: null });
 
     useEffect(() => {
         const accessToken = restoreAccessToken();
@@ -33,17 +34,25 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
         const isProtectedPage = pathname.startsWith('/admin') || pathname.startsWith('/hr');
 
         if (isAuthenticated && (isLoginPage || isRootPage)) {
-            const storedUser = getStoredUser();
-            const mappedUser = mapToUserInfo(storedUser);
-            const roleCodes = getRoleCodes(mappedUser.roles);
+            const roleCodes = getRoleCodes(user?.roles);
             if (hasRole(roleCodes, 'ADMIN')) router.replace('/admin/dashboard');
             else if (hasRole(roleCodes, 'HR')) router.replace('/hr/dashboard');
-            else router.replace('/403');
+            else {
+                // Token/user state exists but doesn't map to any supported app area.
+                // Keep /login usable so user can re-auth as another account.
+                if (isLoginPage) {
+                    clearTokens();
+                    clearStoredUser();
+                    dispatch(logout());
+                } else {
+                    router.replace('/403');
+                }
+            }
         } else if (!isAuthenticated && isProtectedPage && pathname !== '/login') {
             // Anonymous user shouldn't be on protected pages
             router.replace('/login');
         }
-    }, [isInitialized, isAuthenticated, pathname, router]);
+    }, [isInitialized, isAuthenticated, pathname, router, user?.roles]);
 
     // Don't flash protected content before initialization
     if (!isInitialized) {

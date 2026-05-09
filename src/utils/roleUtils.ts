@@ -12,6 +12,12 @@ export const getRoleCodes = (roles: unknown): string[] => {
 export const hasRole = (roles: unknown, required: string): boolean => {
     const requiredCode = normalizeRoleCode(required);
     if (!requiredCode) return false;
-    return getRoleCodes(roles).includes(requiredCode);
+    const codes = getRoleCodes(roles);
+    return codes.some((code) => {
+        if (code === requiredCode) return true;
+        if (code.includes(requiredCode)) return true; // e.g. ROLE_ADMIN, SYS_ADMIN
+        if (code.endsWith(`_${requiredCode}`)) return true;
+        return false;
+    });
 };
 
