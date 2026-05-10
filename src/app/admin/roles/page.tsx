@@ -10,6 +10,7 @@ import {
     useRestoreRoleMutation,
     useGetRolePermissionsQuery,
     useSyncPermissionsToRoleMutation,
+    useGetRoleStatsQuery,
 } from '@/store/api/roleApi';
 import {
     ChevronRight,
@@ -381,12 +382,13 @@ function PermissionManagerModal({
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function RolesPage() {
     const [page, setPage] = useState(0);
+    const [pageSize, setPageSize] = useState(10);
     const [search, setSearch] = useState('');
     const [filterStatus, setFilterStatus] = useState<EntityFilterStatus>('all');
 
     const { data, isLoading, isFetching } = useGetAllRolesQuery({
         page,
-        size: 20,
+        size: pageSize,
         includeDeleted: filterStatus === 'all' || filterStatus === 'deleted'
     });
 
@@ -398,6 +400,10 @@ export default function RolesPage() {
     const [formModal, setFormModal] = useState<{ open: boolean; role?: RoleResponse }>({ open: false });
     const [permModal, setPermModal] = useState<RoleResponse | null>(null);
     const { toasts, push: pushToast } = useToast();
+
+    // Fetch stats
+    const { data: statsData } = useGetRoleStatsQuery();
+    const stats = statsData?.data;
 
     const roles = data?.data ?? [];
     const meta = data?.pagination;
@@ -469,8 +475,10 @@ export default function RolesPage() {
 
             <StatCards
                 items={[
-                    { label: 'Số lượng vai trò', value: meta?.totalItems ?? '—' },
-                    { label: 'Đang hoạt động', value: roles.filter((r) => r.isActive).length, tone: 'green' },
+                    { label: 'Số lượng vai trò', value: stats?.total ?? '—' },
+                    { label: 'Đang hoạt động', value: stats?.active ?? '—', tone: 'green' },
+                    { label: 'Ngừng hoạt động', value: stats?.inactive ?? '—', tone: 'amber' },
+                    { label: 'Đã xóa', value: stats?.deleted ?? '—', tone: 'red' },
                 ]}
             />
 
@@ -505,6 +513,8 @@ export default function RolesPage() {
                               totalItems: meta.totalItems,
                               itemLabel: 'roles',
                               onPageChange: setPage,
+                              pageSize,
+                              onPageSizeChange: (s) => { setPageSize(s); setPage(0); },
                           }
                         : null
                 }

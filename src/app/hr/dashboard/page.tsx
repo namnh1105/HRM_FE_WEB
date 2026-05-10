@@ -1,17 +1,29 @@
 'use client';
 
 import React from 'react';
-import { Calendar, Clock, CheckCircle2, ArrowUpRight, ArrowDownRight, Users, Activity } from 'lucide-react';
 import { useAppSelector } from '@/store/hooks';
+import { 
+    useGetEmployeeStatsQuery, 
+    useGetAttendanceStatsQuery, 
+    useGetLeaveRequestStatsQuery 
+} from '@/store/api/hrApi';
 
 export default function HrDashboardPage() {
     const user = useAppSelector((s) => s.auth?.user);
 
+    const { data: empStatsData } = useGetEmployeeStatsQuery();
+    const { data: attStatsData } = useGetAttendanceStatsQuery();
+    const { data: leaveStatsData } = useGetLeaveRequestStatsQuery();
+
+    const empStats: any = empStatsData?.data;
+    const attStats: any = attStatsData?.data;
+    const leaveStats: any = leaveStatsData?.data;
+
     const stats = [
-        { label: 'Nhân viên đang làm', value: '231', change: '+2.5%', icon: Users, color: 'var(--accent-light)' },
-        { label: 'Chấm công hôm nay', value: '229', change: '+1.2%', icon: CheckCircle2, color: 'var(--green)' },
-        { label: 'Đơn nghỉ phép', value: '12', change: '+3%', icon: Calendar, color: 'var(--amber)' },
-        { label: 'Đi muộn/Về sớm', value: '5', change: '+1%', icon: Clock, color: 'var(--red)' },
+        { label: 'Nhân viên đang làm', value: empStats?.active ?? '—', change: '+0%', icon: Users, color: 'var(--accent-light)' },
+        { label: 'Chấm công hôm nay', value: attStats?.active ?? '—', change: '+0%', icon: CheckCircle2, color: 'var(--green)' },
+        { label: 'Đơn nghỉ phép chờ', value: leaveStats?.active ?? '—', change: '+0%', icon: Calendar, color: 'var(--amber)' },
+        { label: 'Đi muộn hôm nay', value: attStats?.inactive ?? '—', change: '+0%', icon: Clock, color: 'var(--red)' },
     ];
 
     return (

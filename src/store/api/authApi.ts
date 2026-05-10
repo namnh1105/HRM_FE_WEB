@@ -22,6 +22,7 @@ export const authApi = baseApi.injectEndpoints({
                 method: 'POST',
                 body,
             }),
+            invalidatesTags: [{ type: 'User', id: 'LIST' }, { type: 'User', id: 'STATS' }],
         }),
 
         refresh: builder.mutation<ApiResponse<AuthResponseDTO>, RefreshTokenDTO>({

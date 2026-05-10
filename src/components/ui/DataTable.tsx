@@ -15,13 +15,20 @@ export type DataTableProps = {
     /** Truyền `null` / bỏ qua để không hiển thị thanh phân trang */
     pagination?: Pick<
         TablePaginationProps,
-        'page' | 'totalPages' | 'totalItems' | 'itemLabel' | 'onPageChange' | 'hideInfo' | 'siblingCount'
+        | 'page'
+        | 'totalPages'
+        | 'totalItems'
+        | 'itemLabel'
+        | 'onPageChange'
+        | 'pageSize'
+        | 'onPageSizeChange'
+        | 'siblingCount'
     > | null;
 };
 
 /**
  * Vỏ bảng dùng chung: toolbar (tiêu đề + `toolbarRight`) + nội dung + phân trang.
- * Nội dung thường là `<table>…</table>` hoặc `ResourceTable`.
+ * Nội dung là `<table>…</table>` trực tiếp (với thead/tbody, skeleton, empty-state).
  */
 export default function DataTable({
     title,
@@ -40,7 +47,8 @@ export default function DataTable({
                 totalItems={pagination.totalItems}
                 itemLabel={pagination.itemLabel}
                 onPageChange={pagination.onPageChange}
-                hideInfo={pagination.hideInfo}
+                pageSize={pagination.pageSize}
+                onPageSizeChange={pagination.onPageSizeChange}
                 siblingCount={pagination.siblingCount}
             />
         ) : null;

@@ -6,6 +6,7 @@ import {
     PermissionResponse,
     CreateRoleRequest,
     UpdateRoleRequest,
+    ResourceStatsResponse,
 } from '@/types';
 
 export const roleApi = baseApi.injectEndpoints({
@@ -18,6 +19,11 @@ export const roleApi = baseApi.injectEndpoints({
                 method: 'GET',
             }),
             providesTags: [{ type: 'Role', id: 'LIST' }],
+        }),
+
+        getRoleStats: builder.query<ApiResponse<ResourceStatsResponse>, void>({
+            query: () => ({ url: 'roles/stats', method: 'GET' }),
+            providesTags: [{ type: 'Role', id: 'STATS' }],
         }),
 
         // GET /api/v1/roles/active
@@ -41,7 +47,7 @@ export const roleApi = baseApi.injectEndpoints({
         // POST /api/v1/roles
         createRole: builder.mutation<ApiResponse<RoleResponse>, CreateRoleRequest>({
             query: (body) => ({ url: 'roles', method: 'POST', body }),
-            invalidatesTags: [{ type: 'Role', id: 'LIST' }, { type: 'Role', id: 'ACTIVE' }],
+            invalidatesTags: [{ type: 'Role', id: 'LIST' }, { type: 'Role', id: 'ACTIVE' }, { type: 'Role', id: 'STATS' }],
         }),
 
         // PUT /api/v1/roles/:roleId
@@ -51,25 +57,26 @@ export const roleApi = baseApi.injectEndpoints({
                 { type: 'Role', id: roleId },
                 { type: 'Role', id: 'LIST' },
                 { type: 'Role', id: 'ACTIVE' },
+                { type: 'Role', id: 'STATS' },
             ],
         }),
 
         // DELETE /api/v1/roles/:roleId
         deleteRole: builder.mutation<ApiResponse<null>, string>({
             query: (roleId) => ({ url: `roles/${roleId}`, method: 'DELETE' }),
-            invalidatesTags: [{ type: 'Role', id: 'LIST' }, { type: 'Role', id: 'ACTIVE' }],
+            invalidatesTags: [{ type: 'Role', id: 'LIST' }, { type: 'Role', id: 'ACTIVE' }, { type: 'Role', id: 'STATS' }],
         }),
 
         // POST /api/v1/roles/:roleId/activate
         activateRole: builder.mutation<ApiResponse<null>, string>({
             query: (roleId) => ({ url: `roles/${roleId}/activate`, method: 'POST' }),
-            invalidatesTags: (_, __, roleId) => [{ type: 'Role', id: roleId }, { type: 'Role', id: 'LIST' }],
+            invalidatesTags: (_, __, roleId) => [{ type: 'Role', id: roleId }, { type: 'Role', id: 'LIST' }, { type: 'Role', id: 'STATS' }],
         }),
 
         // POST /api/v1/roles/:roleId/deactivate
         deactivateRole: builder.mutation<ApiResponse<null>, string>({
             query: (roleId) => ({ url: `roles/${roleId}/deactivate`, method: 'POST' }),
-            invalidatesTags: (_, __, roleId) => [{ type: 'Role', id: roleId }, { type: 'Role', id: 'LIST' }],
+            invalidatesTags: (_, __, roleId) => [{ type: 'Role', id: roleId }, { type: 'Role', id: 'LIST' }, { type: 'Role', id: 'STATS' }],
         }),
 
         // POST /api/v1/roles/:roleId/permissions
@@ -114,7 +121,7 @@ export const roleApi = baseApi.injectEndpoints({
         // POST /api/v1/roles/:roleId/restore
         restoreRole: builder.mutation<ApiResponse<null>, string>({
             query: (roleId) => ({ url: `roles/${roleId}/restore`, method: 'POST' }),
-            invalidatesTags: (_, __, roleId) => [{ type: 'Role', id: roleId }, { type: 'Role', id: 'LIST' }],
+            invalidatesTags: (_, __, roleId) => [{ type: 'Role', id: roleId }, { type: 'Role', id: 'LIST' }, { type: 'Role', id: 'STATS' }],
         }),
     }),
     overrideExisting: false,
@@ -135,4 +142,5 @@ export const {
     useRemovePermissionsFromRoleMutation,
     useGetRolePermissionsQuery,
     useSyncPermissionsToRoleMutation,
+    useGetRoleStatsQuery,
 } = roleApi;

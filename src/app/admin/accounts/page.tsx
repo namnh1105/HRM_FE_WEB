@@ -21,6 +21,7 @@ import {
     useRemoveRoleFromUserMutation,
     useActivateUserMutation,
     useDeactivateUserMutation,
+    useGetUserStatsQuery,
 } from '@/store/api/userApi';
 import { useRegisterMutation } from '@/store/api/authApi';
 import { useGetActiveRolesQuery } from '@/store/api/roleApi';
@@ -247,8 +248,8 @@ function CreateUserModal({
 }
 
 export default function AccountsPage() {
-    const PAGE_SIZE = 10;
     const [page, setPage] = useState(0);
+    const [pageSize, setPageSize] = useState(10);
     const [search, setSearch] = useState('');
     const [filterStatus, setFilterStatus] = useState<EntityFilterStatus>('all');
 
@@ -260,9 +261,11 @@ export default function AccountsPage() {
 
     const { data, isLoading, isFetching } = useGetAllUsersQuery({
         page,
-        size: PAGE_SIZE,
+        size: pageSize,
         includeDeleted: filterStatus === 'all' || filterStatus === 'deleted',
     });
+
+    const { data: statsData, isLoading: statsLoading } = useGetUserStatsQuery();
 
     const [roleManagerUser, setRoleManagerUser] = useState<UserResponse | null>(null);
     const [confirmAction, setConfirmAction] = useState<null | {
@@ -277,10 +280,7 @@ export default function AccountsPage() {
 
     const users = data?.data ?? [];
     const meta = data?.pagination;
-
-    const totalActive = users.filter((u) => u.isActive && !u.isDeleted).length;
-    const totalInactive = users.filter((u) => !u.isActive && !u.isDeleted).length;
-    const totalDeleted = users.filter((u) => u.isDeleted).length;
+    const stats = statsData?.data;
 
     const filtered = useMemo(() => {
         let list = users;
@@ -376,10 +376,10 @@ export default function AccountsPage() {
 
             <StatCards
                 items={[
-                    { label: 'Số lượng tài khoản', value: isLoading ? '—' : users.length },
-                    { label: 'Đang hoạt động', value: isLoading ? '—' : totalActive, tone: 'green' },
-                    { label: 'Không hoạt động', value: isLoading ? '—' : totalInactive, tone: 'amber' },
-                    { label: 'Đã xóa', value: isLoading ? '—' : totalDeleted, tone: 'red' },
+                    { label: 'Số lượng tài khoản', value: statsLoading ? '—' : (stats?.totalAccounts ?? 0) },
+                    { label: 'Đang hoạt động', value: statsLoading ? '—' : (stats?.activeAccounts ?? 0), tone: 'green' },
+                    { label: 'Không hoạt động', value: statsLoading ? '—' : (stats?.inactiveAccounts ?? 0), tone: 'amber' },
+                    { label: 'Đã xóa', value: statsLoading ? '—' : (stats?.deletedAccounts ?? 0), tone: 'red' },
                 ]}
             />
 
@@ -414,6 +414,8 @@ export default function AccountsPage() {
                               totalItems: meta.totalItems,
                               itemLabel: 'tài khoản',
                               onPageChange: setPage,
+                              pageSize,
+                              onPageSizeChange: (s) => { setPageSize(s); setPage(0); },
                           }
                         : null
                 }

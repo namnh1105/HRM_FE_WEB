@@ -508,8 +508,9 @@ export default function AppGlobalStyles() {
                 justify-content: space-between;
                 flex-wrap: wrap;
                 gap: 12px;
-                padding: 14px 20px;
+                padding: 12px 20px;
                 border-top: 1px solid var(--border);
+                background: #fafbfc;
             }
             .table-pagination-info {
                 font-size: 12px;
@@ -518,14 +519,14 @@ export default function AppGlobalStyles() {
             .table-pagination-nav {
                 display: flex;
                 align-items: center;
-                gap: 6px;
+                gap: 4px;
                 flex-wrap: wrap;
             }
             .table-pagination-btn {
-                min-width: 36px;
-                height: 36px;
-                padding: 0 8px;
-                border-radius: 8px;
+                min-width: 32px;
+                height: 32px;
+                padding: 0 6px;
+                border-radius: 6px;
                 background: #ffffff;
                 border: 1px solid var(--border);
                 color: var(--text-secondary);
@@ -540,26 +541,64 @@ export default function AppGlobalStyles() {
             .table-pagination-btn:hover:not(:disabled) {
                 background: var(--bg-elevated);
                 color: var(--accent);
-                border-color: rgba(59, 130, 246, 0.35);
+                border-color: rgba(59, 130, 246, 0.4);
             }
             .table-pagination-btn:disabled {
-                opacity: 0.45;
+                opacity: 0.35;
                 cursor: not-allowed;
             }
-            .table-pagination-btn--num { min-width: 36px; }
+            .table-pagination-btn--num { min-width: 32px; }
             .table-pagination-btn.is-active {
-                background: #3b9eff;
-                color: #ffffff;
-                border-color: #3b9eff;
+                background: #ffffff;
+                color: #1677ff;
+                border-color: #1677ff;
+                font-weight: 600;
             }
             .table-pagination-ellipsis {
                 display: inline-flex;
                 align-items: center;
                 justify-content: center;
-                min-width: 28px;
+                min-width: 24px;
                 color: var(--text-muted);
                 font-size: 13px;
                 user-select: none;
+            }
+            /* Page size selector */
+            .table-pagination-sizer {
+                position: relative;
+                display: inline-flex;
+                align-items: center;
+                margin-left: 8px;
+            }
+            .table-pagination-sizer-select {
+                appearance: none;
+                -webkit-appearance: none;
+                height: 32px;
+                padding: 0 28px 0 10px;
+                border-radius: 6px;
+                background: #ffffff;
+                border: 1px solid var(--border);
+                color: var(--text-secondary);
+                font-size: 12px;
+                font-weight: 500;
+                cursor: pointer;
+                outline: none;
+                transition: border-color var(--transition), box-shadow var(--transition);
+                white-space: nowrap;
+            }
+            .table-pagination-sizer-select:hover {
+                border-color: rgba(59,130,246,0.4);
+                color: var(--text-primary);
+            }
+            .table-pagination-sizer-select:focus {
+                border-color: #1677ff;
+                box-shadow: 0 0 0 2px rgba(22,119,255,0.15);
+            }
+            .table-pagination-sizer-icon {
+                position: absolute;
+                right: 8px;
+                pointer-events: none;
+                color: var(--text-muted);
             }
 
             .toast-container {

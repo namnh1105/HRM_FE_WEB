@@ -12,6 +12,7 @@ import {
     useActivatePermissionMutation,
     useDeactivatePermissionMutation,
     useRestorePermissionMutation,
+    useGetPermissionStatsQuery,
 } from '@/store/api/permissionApi';
 import type { PermissionResponse, CreatePermissionRequest, UpdatePermissionRequest } from '@/types';
 import PageHeader from '@/components/ui/PageHeader';
@@ -135,6 +136,10 @@ export default function PermissionsPage() {
     const [formModal, setFormModal] = useState<{ open: boolean; perm?: PermissionResponse }>({ open: false });
     const { toasts, push: pushToast } = useToast();
 
+    // Fetch stats
+    const { data: statsData } = useGetPermissionStatsQuery();
+    const stats = statsData?.data;
+
     const perms = data?.data ?? [];
     const meta = data?.pagination;
 
@@ -221,10 +226,10 @@ export default function PermissionsPage() {
 
             <StatCards
                 items={[
-                    { label: 'Tổng quyền', value: meta?.totalItems ?? perms.length, sub: 'Tất cả permissions' },
-                    { label: 'Đang hoạt động', value: perms.filter((p) => p.isActive).length, tone: 'green', sub: 'Active' },
-                    { label: 'Hệ thống', value: perms.filter((p) => p.isSystem).length, tone: 'default', sub: 'Built-in' },
-                    { label: 'Resources', value: resources.length - 1, sub: 'Nhóm tài nguyên' },
+                    { label: 'Tổng quyền', value: stats?.total ?? '—', sub: 'Tất cả permissions' },
+                    { label: 'Đang hoạt động', value: stats?.active ?? '—', tone: 'green', sub: 'Active' },
+                    { label: 'Ngừng hoạt động', value: stats?.inactive ?? '—', tone: 'amber', sub: 'Inactive' },
+                    { label: 'Đã xóa', value: stats?.deleted ?? '—', tone: 'red', sub: 'Deleted' },
                 ]}
             />
 
@@ -271,12 +276,12 @@ export default function PermissionsPage() {
                 pagination={
                     meta
                         ? {
-                              page,
-                              totalPages: Math.max(1, meta.totalPages),
-                              totalItems: meta.totalItems,
-                              itemLabel: 'quyền',
-                              onPageChange: setPage,
-                          }
+                            page,
+                            totalPages: Math.max(1, meta.totalPages),
+                            totalItems: meta.totalItems,
+                            itemLabel: 'quyền',
+                            onPageChange: setPage,
+                        }
                         : null
                 }
             >

@@ -1,8 +1,11 @@
 'use client';
 
 import React from 'react';
-import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react';
 import { getPaginationItems } from '@/utils/pagination';
+
+export const PAGE_SIZE_OPTIONS = [10, 20, 50, 100] as const;
+export type PageSizeOption = (typeof PAGE_SIZE_OPTIONS)[number];
 
 export type TablePaginationProps = {
     /** Trang hiện tại, 0-based */
@@ -11,8 +14,10 @@ export type TablePaginationProps = {
     totalItems: number;
     itemLabel: string;
     onPageChange: (nextPage: number) => void;
-    /** Ẩn dòng “Trang x / y — z …” */
-    hideInfo?: boolean;
+    /** Số bản ghi mỗi trang (default: 10) */
+    pageSize?: number;
+    /** Callback khi thay đổi số bản ghi/trang */
+    onPageSizeChange?: (size: number) => void;
     siblingCount?: number;
     className?: string;
 };
@@ -23,7 +28,8 @@ export default function TablePagination({
     totalItems,
     itemLabel,
     onPageChange,
-    hideInfo = false,
+    pageSize = 10,
+    onPageSizeChange,
     siblingCount = 1,
     className,
 }: TablePaginationProps) {
@@ -34,23 +40,14 @@ export default function TablePagination({
 
     return (
         <div className={`table-pagination-row${className ? ` ${className}` : ''}`}>
-            {!hideInfo ? (
-                <span className="table-pagination-info">
-                    Trang {page + 1} / {totalPages} — {totalItems} {itemLabel}
-                </span>
-            ) : (
-                <span />
-            )}
+            {/* Info bên trái */}
+            <span className="table-pagination-info">
+                {totalItems} {itemLabel}
+            </span>
+
+            {/* Nav + Page size selector bên phải */}
             <div className="table-pagination-nav" role="navigation" aria-label="Phân trang">
-                <button
-                    type="button"
-                    className="table-pagination-btn"
-                    disabled={page <= 0}
-                    onClick={() => onPageChange(0)}
-                    aria-label="Trang đầu"
-                >
-                    <ChevronsLeft size={16} strokeWidth={2} />
-                </button>
+                {/* Prev */}
                 <button
                     type="button"
                     className="table-pagination-btn"
@@ -58,8 +55,10 @@ export default function TablePagination({
                     onClick={() => onPageChange(page - 1)}
                     aria-label="Trang trước"
                 >
-                    <ChevronLeft size={16} strokeWidth={2} />
+                    <ChevronLeft size={14} strokeWidth={2} />
                 </button>
+
+                {/* Page numbers */}
                 {items.map((item, idx) =>
                     item === 'ellipsis' ? (
                         <span key={`e-${idx}`} className="table-pagination-ellipsis" aria-hidden>
@@ -78,6 +77,8 @@ export default function TablePagination({
                         </button>
                     )
                 )}
+
+                {/* Next */}
                 <button
                     type="button"
                     className="table-pagination-btn"
@@ -85,17 +86,30 @@ export default function TablePagination({
                     onClick={() => onPageChange(page + 1)}
                     aria-label="Trang sau"
                 >
-                    <ChevronRight size={16} strokeWidth={2} />
+                    <ChevronRight size={14} strokeWidth={2} />
                 </button>
-                <button
-                    type="button"
-                    className="table-pagination-btn"
-                    disabled={page >= last}
-                    onClick={() => onPageChange(last)}
-                    aria-label="Trang cuối"
-                >
-                    <ChevronsRight size={16} strokeWidth={2} />
-                </button>
+
+                {/* Page size selector */}
+                {onPageSizeChange && (
+                    <div className="table-pagination-sizer">
+                        <select
+                            className="table-pagination-sizer-select"
+                            value={pageSize}
+                            onChange={(e) => {
+                                onPageSizeChange(Number(e.target.value));
+                                onPageChange(0); // reset về trang 1
+                            }}
+                            aria-label="Số bản ghi mỗi trang"
+                        >
+                            {PAGE_SIZE_OPTIONS.map((s) => (
+                                <option key={s} value={s}>
+                                    {s} / trang
+                                </option>
+                            ))}
+                        </select>
+                        <ChevronDown size={12} className="table-pagination-sizer-icon" />
+                    </div>
+                )}
             </div>
         </div>
     );

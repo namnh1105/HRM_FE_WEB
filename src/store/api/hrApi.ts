@@ -17,6 +17,10 @@ export const hrApi = baseApi.injectEndpoints({
             }),
             providesTags: [{ type: 'Employee', id: 'LIST' }],
         }),
+        getEmployeeStats: builder.query<unknown, void>({
+            query: () => ({ url: 'employees/stats', method: 'GET' }),
+            providesTags: [{ type: 'Employee', id: 'STATS' }],
+        }),
         getEmployeeById: builder.query<unknown, string>({
             query: (employeeId) => ({
                 url: `employees/${employeeId}`,
@@ -30,7 +34,7 @@ export const hrApi = baseApi.injectEndpoints({
                 method: 'POST',
                 body,
             }),
-            invalidatesTags: [{ type: 'Employee', id: 'LIST' }],
+            invalidatesTags: [{ type: 'Employee', id: 'LIST' }, { type: 'Employee', id: 'STATS' }],
         }),
         updateEmployee: builder.mutation<unknown, { id: string; body: UpdateEmployeeRequest }>({
             query: ({ id, body }) => ({
@@ -41,6 +45,7 @@ export const hrApi = baseApi.injectEndpoints({
             invalidatesTags: (_, __, { id }) => [
                 { type: 'Employee', id: 'LIST' },
                 { type: 'Employee', id },
+                { type: 'Employee', id: 'STATS' },
             ],
         }),
         getMyAttendanceHistory: builder.query<unknown, { startDate?: string; endDate?: string; page?: number; size?: number }>({
@@ -60,12 +65,17 @@ export const hrApi = baseApi.injectEndpoints({
                 method: 'GET',
             }),
         }),
+        getAttendanceStats: builder.query<unknown, void>({
+            query: () => ({ url: 'attendances/stats', method: 'GET' }),
+            providesTags: [{ type: 'Attendance', id: 'STATS' }],
+        }),
         checkIn: builder.mutation<unknown, { workShiftId?: string } | void>({
             query: (body) => ({
                 url: `attendances/check-in`,
                 method: 'POST',
                 body: body ?? {},
             }),
+            invalidatesTags: [{ type: 'Attendance', id: 'STATS' }],
         }),
         checkOut: builder.mutation<unknown, { workShiftId?: string } | void>({
             query: (body) => ({
@@ -73,6 +83,7 @@ export const hrApi = baseApi.injectEndpoints({
                 method: 'POST',
                 body: body ?? {},
             }),
+            invalidatesTags: [{ type: 'Attendance', id: 'STATS' }],
         }),
         getWorkShifts: builder.query<unknown, { page?: number; size?: number }>({
             query: ({ page = 0, size = 10 } = {}) => ({
@@ -123,6 +134,10 @@ export const hrApi = baseApi.injectEndpoints({
             }),
             providesTags: [{ type: 'LeaveRequest', id: 'LIST' }],
         }),
+        getLeaveRequestStats: builder.query<unknown, void>({
+            query: () => ({ url: 'leave-requests/stats', method: 'GET' }),
+            providesTags: [{ type: 'LeaveRequest', id: 'STATS' }],
+        }),
         getPendingLeaveRequests: builder.query<unknown, { page?: number; size?: number }>({
             query: ({ page = 0, size = 10 } = {}) => ({
                 url: `leave-requests/pending?page=${page}&size=${size}`,
@@ -138,6 +153,7 @@ export const hrApi = baseApi.injectEndpoints({
             invalidatesTags: [
                 { type: 'LeaveRequest', id: 'LIST' },
                 { type: 'LeaveRequest', id: 'PENDING' },
+                { type: 'LeaveRequest', id: 'STATS' },
             ],
         }),
         cancelLeaveRequest: builder.mutation<unknown, string>({
@@ -148,6 +164,7 @@ export const hrApi = baseApi.injectEndpoints({
             invalidatesTags: [
                 { type: 'LeaveRequest', id: 'LIST' },
                 { type: 'LeaveRequest', id: 'PENDING' },
+                { type: 'LeaveRequest', id: 'STATS' },
             ],
         }),
         getContracts: builder.query<unknown, { page?: number; size?: number }>({
@@ -156,6 +173,10 @@ export const hrApi = baseApi.injectEndpoints({
                 method: 'GET',
             }),
             providesTags: [{ type: 'Contract', id: 'LIST' }],
+        }),
+        getContractStats: builder.query<unknown, void>({
+            query: () => ({ url: 'contracts/stats', method: 'GET' }),
+            providesTags: [{ type: 'Contract', id: 'STATS' }],
         }),
         getActiveContracts: builder.query<unknown, { page?: number; size?: number }>({
             query: ({ page = 0, size = 10 } = {}) => ({
@@ -169,7 +190,7 @@ export const hrApi = baseApi.injectEndpoints({
                 method: 'POST',
                 body,
             }),
-            invalidatesTags: [{ type: 'Contract', id: 'LIST' }],
+            invalidatesTags: [{ type: 'Contract', id: 'LIST' }, { type: 'Contract', id: 'STATS' }],
         }),
         updateContract: builder.mutation<unknown, { id: string; body: UpdateContractRequest }>({
             query: ({ id, body }) => ({
@@ -177,7 +198,7 @@ export const hrApi = baseApi.injectEndpoints({
                 method: 'PUT',
                 body,
             }),
-            invalidatesTags: [{ type: 'Contract', id: 'LIST' }],
+            invalidatesTags: [{ type: 'Contract', id: 'LIST' }, { type: 'Contract', id: 'STATS' }],
         }),
     }),
     overrideExisting: false,
@@ -206,4 +227,8 @@ export const {
     useGetActiveContractsQuery,
     useCreateContractMutation,
     useUpdateContractMutation,
+    useGetEmployeeStatsQuery,
+    useGetContractStatsQuery,
+    useGetLeaveRequestStatsQuery,
+    useGetAttendanceStatsQuery,
 } = hrApi;
