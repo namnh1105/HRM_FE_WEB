@@ -112,14 +112,18 @@ export const hrApi = baseApi.injectEndpoints({
                 method: 'PUT',
                 body,
             }),
-            invalidatesTags: [{ type: 'WorkShift', id: 'LIST' }],
+            invalidatesTags: [{ type: 'WorkShift', id: 'LIST' }, { type: 'WorkShift', id: 'STATS' }],
         }),
         deleteWorkShift: builder.mutation<unknown, string>({
             query: (id) => ({
                 url: `work-shifts/${id}`,
                 method: 'DELETE',
             }),
-            invalidatesTags: [{ type: 'WorkShift', id: 'LIST' }],
+            invalidatesTags: [{ type: 'WorkShift', id: 'LIST' }, { type: 'WorkShift', id: 'STATS' }],
+        }),
+        getWorkShiftStats: builder.query<unknown, void>({
+            query: () => ({ url: 'work-shifts/stats', method: 'GET' }),
+            providesTags: [{ type: 'WorkShift', id: 'STATS' }],
         }),
         getMyLeaveRequests: builder.query<unknown, { page?: number; size?: number }>({
             query: ({ page = 0, size = 10 } = {}) => ({
@@ -127,9 +131,9 @@ export const hrApi = baseApi.injectEndpoints({
                 method: 'GET',
             }),
         }),
-        getLeaveRequests: builder.query<unknown, { page?: number; size?: number }>({
-            query: ({ page = 0, size = 10 } = {}) => ({
-                url: `leave-requests?page=${page}&size=${size}`,
+        getLeaveRequests: builder.query<unknown, { page?: number; size?: number; status?: string }>({
+            query: ({ page = 0, size = 10, status } = {}) => ({
+                url: `leave-requests?page=${page}&size=${size}${status ? `&status=${status}` : ''}`,
                 method: 'GET',
             }),
             providesTags: [{ type: 'LeaveRequest', id: 'LIST' }],
@@ -231,4 +235,5 @@ export const {
     useGetContractStatsQuery,
     useGetLeaveRequestStatsQuery,
     useGetAttendanceStatsQuery,
+    useGetWorkShiftStatsQuery,
 } = hrApi;

@@ -7,6 +7,7 @@ import {
     useDeleteWorkShiftMutation,
     useGetWorkShiftsQuery,
     useUpdateWorkShiftMutation,
+    useGetWorkShiftStatsQuery,
 } from '@/store/api/hrApi';
 import PageHeader from '@/components/ui/PageHeader';
 import StatCards from '@/components/ui/StatCards';
@@ -26,7 +27,7 @@ type WorkShiftRow = {
 };
 
 function isEnabled(r: WorkShiftRow): boolean {
-    const v = r.enabled;
+    const v = r.isActive ?? r.enabled;
     if (typeof v === 'boolean') return v;
     return String(v).toLowerCase() === 'true' || String(v).toLowerCase() === 'enabled';
 }
@@ -43,6 +44,9 @@ export default function WorkShiftsPage() {
     const [pageSize, setPageSize] = useState(10);
     const [search, setSearch] = useState('');
     const [filter, setFilter] = useState<'all' | 'enabled' | 'disabled'>('all');
+
+    const { data: statsData, isLoading: statsLoading } = useGetWorkShiftStatsQuery();
+    const stats = (statsData as any)?.data;
 
     const { data, isLoading, isFetching, refetch } = useGetWorkShiftsQuery({ page, size: pageSize });
     const [deleteShift, { isLoading: isDeleting }] = useDeleteWorkShiftMutation();
@@ -88,8 +92,10 @@ export default function WorkShiftsPage() {
 
             <StatCards
                 items={[
-                    { label: 'Tổng số ca', value: meta?.totalItems ?? '—' },
-                    { label: 'Đang hoạt động', value: shifts.filter(isEnabled).length, tone: 'green' },
+                    { label: 'Tổng số ca', value: statsLoading ? '—' : (stats?.total ?? 0) },
+                    { label: 'Đang hoạt động', value: statsLoading ? '—' : (stats?.active ?? 0), tone: 'green' },
+                    { label: 'Ngưng hoạt động', value: statsLoading ? '—' : (stats?.inactive ?? 0), tone: 'amber' },
+                    { label: 'Đã xóa', value: statsLoading ? '—' : (stats?.deleted ?? 0), tone: 'red' },
                 ]}
             />
 
@@ -225,13 +231,18 @@ function WorkShiftFormModal({ initial, onClose, onSaved, pushToast }: any) {
     
     const [formData, setFormData] = useState({
         name: initial?.name || '',
+        code: initial?.code || '',
         startTime: initial?.startTime || '08:00',
         endTime: initial?.endTime || '17:00',
-        enabled: isEnabled(initial || {enabled: true})
+        breakDuration: initial?.breakDuration ?? 1.0,
+        description: initial?.description || '',
+        isActive: initial ? (initial.isActive ?? true) : true,
+        isNightShift: initial?.isNightShift ?? false,
     });
 
     const handleSubmit = async () => {
         if (!formData.name) return pushToast('Vui lòng nhập tên ca', 'error');
+        if (!initial?.id && !formData.code) return pushToast('Vui lòng nhập mã ca', 'error');
         setLoading(true);
         try {
             if (initial?.id) {
@@ -258,21 +269,47 @@ function WorkShiftFormModal({ initial, onClose, onSaved, pushToast }: any) {
                     <button className="btn btn-icon btn-ghost" onClick={onClose}><X size={16} /></button>
                 </div>
                 <div className="modal-body">
-                    <div className="field-group">
-                        <label className="field-label">Tên ca</label>
-                        <input className="field-input" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                        <div className="field-group">
+                            <label className="field-label">Tên ca</label>
+                            <input className="field-input" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
+                        </div>
+                        {!initial?.id && (
+                            <div className="field-group">
+                                <label className="field-label">Mã ca (Cố định)</label>
+                                <input className="field-input" value={formData.code} onChange={e => setFormData({...formData, code: e.target.value.toUpperCase()})} />
+                            </div>
+                        )}
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                        <div className="field-group">
+                            <label className="field-label">Giờ vào</label>
+                            <input className="field-input" type="time" value={formData.startTime} onChange={e => setFormData({...formData, startTime: e.target.value})} />
+                        </div>
+                        <div className="field-group">
+                            <label className="field-label">Giờ ra</label>
+                            <input className="field-input" type="time" value={formData.endTime} onChange={e => setFormData({...formData, endTime: e.target.value})} />
+                        </div>
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                        <div className="field-group">
+                            <label className="field-label">Nghỉ giữa ca (giờ)</label>
+                            <input className="field-input" type="number" step="0.5" value={formData.breakDuration} onChange={e => setFormData({...formData, breakDuration: parseFloat(e.target.value)})} />
+                        </div>
+                        <div className="field-group" style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 20, paddingTop: 28 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                <input id="ws-active" type="checkbox" checked={formData.isActive} onChange={e => setFormData({...formData, isActive: e.target.checked})} />
+                                <label htmlFor="ws-active" className="field-label" style={{ margin: 0 }}>Kích hoạt</label>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                <input id="ws-night" type="checkbox" checked={formData.isNightShift} onChange={e => setFormData({...formData, isNightShift: e.target.checked})} />
+                                <label htmlFor="ws-night" className="field-label" style={{ margin: 0 }}>Ca đêm</label>
+                            </div>
+                        </div>
                     </div>
                     <div className="field-group">
-                        <label className="field-label">Giờ vào</label>
-                        <input className="field-input" type="time" value={formData.startTime} onChange={e => setFormData({...formData, startTime: e.target.value})} />
-                    </div>
-                    <div className="field-group">
-                        <label className="field-label">Giờ ra</label>
-                        <input className="field-input" type="time" value={formData.endTime} onChange={e => setFormData({...formData, endTime: e.target.value})} />
-                    </div>
-                    <div className="field-group" style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                        <input id="ws-enabled" type="checkbox" checked={formData.enabled} onChange={e => setFormData({...formData, enabled: e.target.checked})} />
-                        <label htmlFor="ws-enabled" className="field-label" style={{ margin: 0 }}>Kích hoạt</label>
+                        <label className="field-label">Mô tả</label>
+                        <textarea className="field-input" rows={2} value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} />
                     </div>
                 </div>
                 <div className="modal-footer">

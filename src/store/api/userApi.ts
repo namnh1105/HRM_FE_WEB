@@ -127,10 +127,10 @@ export const userApi = baseApi.injectEndpoints({
 
         // GET /api/v1/users/stats
         getUserStats: builder.query<ApiResponse<{
-            totalAccounts: number;
-            activeAccounts: number;
-            inactiveAccounts: number;
-            deletedAccounts: number;
+            total: number;
+            active: number;
+            inactive: number;
+            deleted: number;
         }>, void>({
             query: () => ({ url: 'users/stats', method: 'GET' }),
             providesTags: [{ type: 'User', id: 'STATS' }],

@@ -376,10 +376,10 @@ export default function AccountsPage() {
 
             <StatCards
                 items={[
-                    { label: 'Số lượng tài khoản', value: statsLoading ? '—' : (stats?.totalAccounts ?? 0) },
-                    { label: 'Đang hoạt động', value: statsLoading ? '—' : (stats?.activeAccounts ?? 0), tone: 'green' },
-                    { label: 'Không hoạt động', value: statsLoading ? '—' : (stats?.inactiveAccounts ?? 0), tone: 'amber' },
-                    { label: 'Đã xóa', value: statsLoading ? '—' : (stats?.deletedAccounts ?? 0), tone: 'red' },
+                    { label: 'Số lượng tài khoản', value: statsLoading ? '—' : (stats?.total ?? 0) },
+                    { label: 'Đang hoạt động', value: statsLoading ? '—' : (stats?.active ?? 0), tone: 'green' },
+                    { label: 'Không hoạt động', value: statsLoading ? '—' : (stats?.inactive ?? 0), tone: 'amber' },
+                    { label: 'Đã xóa', value: statsLoading ? '—' : (stats?.deleted ?? 0), tone: 'red' },
                 ]}
             />
 

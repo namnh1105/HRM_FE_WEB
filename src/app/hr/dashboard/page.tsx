@@ -1,6 +1,14 @@
 'use client';
 
-import React from 'react';
+import { 
+    Calendar, 
+    Clock, 
+    CheckCircle2, 
+    ArrowUpRight, 
+    ArrowDownRight, 
+    Users, 
+    Activity 
+} from 'lucide-react';
 import { useAppSelector } from '@/store/hooks';
 import { 
     useGetEmployeeStatsQuery, 

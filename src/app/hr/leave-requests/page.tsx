@@ -27,7 +27,7 @@ type LeaveRow = {
     [key: string]: any;
 };
 
-type ListMode = 'all' | 'pending';
+type ListMode = 'all' | 'PENDING' | 'APPROVED' | 'REJECTED';
 
 function isPendingRow(row: LeaveRow): boolean {
     const s = String(row.status ?? '').toUpperCase();
@@ -55,11 +55,11 @@ export default function LeaveRequestsPage() {
     const [listMode, setListMode] = useState<ListMode>('all');
     const [search, setSearch] = useState('');
 
-    const allQuery = useGetLeaveRequestsQuery({ page, size: pageSize }, { skip: listMode !== 'all' });
-    const pendingQuery = useGetPendingLeaveRequestsQuery({ page, size: pageSize }, { skip: listMode !== 'pending' });
-
-    const activeQuery = listMode === 'all' ? allQuery : pendingQuery;
-    const { data, isLoading, isFetching } = activeQuery;
+    const { data, isLoading, isFetching } = useGetLeaveRequestsQuery({ 
+        page, 
+        size: pageSize, 
+        status: listMode === 'all' ? undefined : listMode 
+    });
 
     // Fetch stats
     const { data: statsData } = useGetLeaveRequestStatsQuery();
@@ -108,7 +108,9 @@ export default function LeaveRequestsPage() {
                         <FilterPills<ListMode>
                             options={[
                                 { id: 'all', label: 'Tất cả' },
-                                { id: 'pending', label: 'Chờ duyệt' },
+                                { id: 'PENDING', label: 'Chờ duyệt' },
+                                { id: 'APPROVED', label: 'Đã duyệt' },
+                                { id: 'REJECTED', label: 'Từ chối' },
                             ]}
                             value={listMode}
                             onChange={(v) => { setListMode(v); setPage(0); }}
