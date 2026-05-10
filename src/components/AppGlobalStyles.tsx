@@ -144,6 +144,14 @@ export default function AppGlobalStyles() {
             }
             .nav-icon { flex-shrink: 0; }
             .nav-label { flex: 1; }
+            .nav-badge {
+                font-size: 10px;
+                padding: 1px 6px;
+                background: var(--accent);
+                color: #fff;
+                border-radius: 10px;
+                font-weight: 600;
+            }
 
             .sidebar-footer {
                 padding: 8px;
