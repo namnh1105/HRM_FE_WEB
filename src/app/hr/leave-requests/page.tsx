@@ -4,9 +4,7 @@ import React, { useMemo, useState } from 'react';
 import { Calendar, CheckCircle2, XCircle } from 'lucide-react';
 import {
     useApproveLeaveRequestMutation,
-    useCancelLeaveRequestMutation,
     useGetLeaveRequestsQuery,
-    useGetPendingLeaveRequestsQuery,
     useGetLeaveRequestStatsQuery,
 } from '@/store/api/hrApi';
 import PageHeader from '@/components/ui/PageHeader';
@@ -69,7 +67,6 @@ export default function LeaveRequestsPage() {
     const meta = (data as any)?.pagination;
 
     const [approve, { isLoading: isApproving }] = useApproveLeaveRequestMutation();
-    const [cancel, { isLoading: isCancelling }] = useCancelLeaveRequestMutation();
 
     const filtered = useMemo(() => {
         let list = [...rows];
@@ -182,17 +179,17 @@ export default function LeaveRequestsPage() {
                                             <div style={{ display: 'flex', gap: 6 }}>
                                                 <button 
                                                     className="btn btn-sm btn-primary" 
-                                                    onClick={() => approve(row.id).unwrap().then(() => pushToast('Đã duyệt'))}
-                                                    disabled={isApproving || isCancelling}
+                                                    onClick={() => approve({ id: row.id, body: { approved: true } }).unwrap().then(() => pushToast('Đã duyệt'))}
+                                                    disabled={isApproving}
                                                 >
                                                     <CheckCircle2 size={14} /> Duyệt
                                                 </button>
                                                 <button 
                                                     className="btn btn-sm btn-ghost" 
-                                                    onClick={() => cancel(row.id).unwrap().then(() => pushToast('Đã hủy'))}
-                                                    disabled={isApproving || isCancelling}
+                                                    onClick={() => approve({ id: row.id, body: { approved: false } }).unwrap().then(() => pushToast('Đã từ chối'))}
+                                                    disabled={isApproving}
                                                 >
-                                                    <XCircle size={14} /> Hủy
+                                                    <XCircle size={14} /> Từ chối
                                                 </button>
                                             </div>
                                         )}

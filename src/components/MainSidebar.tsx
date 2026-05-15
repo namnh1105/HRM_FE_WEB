@@ -15,7 +15,6 @@ import {
     Clock3,
     CalendarCheck2,
     FileText,
-    BriefcaseBusiness,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
@@ -79,6 +78,13 @@ const NAV_ITEMS: NavItem[] = [
         section: 'Quản lý nhân sự',
     },
     {
+        label: 'Chi nhánh',
+        href: '/hr/stores',
+        icon: Building2,
+        roles: ['HR'],
+        section: 'Quản lý nhân sự',
+    },
+    {
         label: 'Chấm công',
         href: '/hr/attendances',
         icon: Clock3,
@@ -96,13 +102,6 @@ const NAV_ITEMS: NavItem[] = [
         label: 'Nghỉ phép',
         href: '/hr/leave-requests',
         icon: Key,
-        roles: ['HR'],
-        section: 'Quản lý nhân sự',
-    },
-    {
-        label: 'Tuyển dụng',
-        href: '/hr/recruitment',
-        icon: BriefcaseBusiness,
         roles: ['HR'],
         section: 'Quản lý nhân sự',
     },

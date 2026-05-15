@@ -12,15 +12,33 @@ import ToastStack from '@/components/ToastStack';
 
 type ContractRow = {
     id: string;
-    code: string;
+    contractCode?: string;
     employeeName?: string;
     employee?: { id?: string; fullName?: string };
-    type?: string;
+    contractType?: string;
     startDate?: string;
     endDate?: string;
     status?: string;
+    baseSalary?: number;
+    salaryCoefficient?: number;
+    signingDate?: string;
+    note?: string;
+    attachmentUrl?: string;
     [key: string]: any;
 };
+
+const CONTRACT_TYPE_OPTIONS = [
+    { value: 'PROBATION', label: 'Thử việc' },
+    { value: 'DEFINITE_TERM', label: 'Xác định thời hạn' },
+    { value: 'INDEFINITE_TERM', label: 'Không xác định thời hạn' },
+    { value: 'SEASONAL', label: 'Thời vụ' },
+    { value: 'PART_TIME', label: 'Bán thời gian' },
+];
+
+const CONTRACT_TYPE_LABELS = CONTRACT_TYPE_OPTIONS.reduce<Record<string, string>>((acc, cur) => {
+    acc[cur.value] = cur.label;
+    return acc;
+}, {});
 
 function formatDate(val: string | undefined) {
     if (!val) return '—';
@@ -59,6 +77,7 @@ export default function ContractsPage() {
         const q = search.toLowerCase();
         if (q) {
             list = list.filter(r => 
+                r.contractCode?.toLowerCase().includes(q) || 
                 r.code?.toLowerCase().includes(q) || 
                 r.employeeName?.toLowerCase().includes(q)
             );
@@ -158,11 +177,13 @@ export default function ContractsPage() {
                                 <tr key={row.id}>
                                     <td>
                                         <code style={{ fontSize: 12, color: 'var(--accent-light)', background: 'var(--accent-glow)', padding: '2px 6px', borderRadius: 4 }}>
-                                            {row.code}
+                                            {row.contractCode || row.code}
                                         </code>
                                     </td>
                                     <td className="td-primary">{row.employeeName || row.employee?.fullName || '—'}</td>
-                                    <td style={{ color: 'var(--text-muted)', fontSize: 13 }}>{row.type}</td>
+                                    <td style={{ color: 'var(--text-muted)', fontSize: 13 }}>
+                                        {CONTRACT_TYPE_LABELS[row.contractType || row.type || ''] || row.contractType || row.type}
+                                    </td>
                                     <td style={{ color: 'var(--text-muted)', fontSize: 12 }}>{formatDate(row.startDate)}</td>
                                     <td style={{ color: 'var(--text-muted)', fontSize: 12 }}>{formatDate(row.endDate)}</td>
                                     <td><StatusBadge status={row.status} /></td>
@@ -196,25 +217,56 @@ function ContractFormModal({ initial, onClose, onSaved, pushToast }: any) {
     const [create] = useCreateContractMutation();
     const [update] = useUpdateContractMutation();
     const [loading, setLoading] = useState(false);
+
+    const generateContractCode = () => {
+        const uuid = typeof crypto !== 'undefined' && 'randomUUID' in crypto ? crypto.randomUUID() : String(Date.now());
+        return `CTR-${uuid}`;
+    };
+
+    const [attachmentFile, setAttachmentFile] = useState<File | null>(null);
     
     const [formData, setFormData] = useState({
-        code: initial?.code || '',
+        contractCode: initial?.contractCode || initial?.code || generateContractCode(),
         employeeId: initial?.employeeId || initial?.employee?.id || '',
-        type: initial?.type || 'FULL_TIME',
+        contractType: initial?.contractType || initial?.type || 'PROBATION',
         startDate: initial?.startDate?.slice(0, 10) || new Date().toISOString().slice(0, 10),
         endDate: initial?.endDate?.slice(0, 10) || '',
-        status: initial?.status || 'ACTIVE'
+        signingDate: initial?.signingDate?.slice(0, 10) || '',
+        baseSalary: initial?.baseSalary ?? '',
+        salaryCoefficient: initial?.salaryCoefficient ?? '',
+        status: initial?.status || 'ACTIVE',
+        note: initial?.note || '',
+        attachmentUrl: initial?.attachmentUrl || '',
     });
 
     const handleSubmit = async () => {
-        if (!formData.code || (!initial && !formData.employeeId)) return pushToast('Vui lòng điền đủ thông tin', 'error');
+        if (!initial && !formData.employeeId) return pushToast('Vui lòng điền đủ thông tin', 'error');
+        if (!initial && !formData.baseSalary) return pushToast('Vui lòng nhập lương cơ bản', 'error');
         setLoading(true);
         try {
             if (initial?.id) {
-                await update({ id: initial.id, body: formData }).unwrap();
+                const updateBody = new FormData();
+                if (formData.endDate) updateBody.append('endDate', formData.endDate);
+                if (formData.baseSalary) updateBody.append('baseSalary', String(formData.baseSalary));
+                if (formData.salaryCoefficient) updateBody.append('salaryCoefficient', String(formData.salaryCoefficient));
+                if (formData.status) updateBody.append('status', formData.status);
+                if (formData.note) updateBody.append('note', formData.note);
+                if (attachmentFile) updateBody.append('file', attachmentFile);
+                await update({ id: initial.id, body: updateBody }).unwrap();
                 pushToast('Cập nhật thành công');
             } else {
-                await create(formData).unwrap();
+                const createBody = new FormData();
+                createBody.append('contractCode', formData.contractCode || generateContractCode());
+                createBody.append('employeeId', formData.employeeId);
+                createBody.append('contractType', formData.contractType);
+                createBody.append('startDate', formData.startDate);
+                if (formData.endDate) createBody.append('endDate', formData.endDate);
+                if (formData.signingDate) createBody.append('signingDate', formData.signingDate);
+                createBody.append('baseSalary', String(formData.baseSalary));
+                if (formData.salaryCoefficient) createBody.append('salaryCoefficient', String(formData.salaryCoefficient));
+                if (formData.note) createBody.append('note', formData.note);
+                if (attachmentFile) createBody.append('file', attachmentFile);
+                await create(createBody).unwrap();
                 pushToast('Thêm mới thành công');
             }
             onSaved();
@@ -222,6 +274,7 @@ function ContractFormModal({ initial, onClose, onSaved, pushToast }: any) {
         } catch {
             pushToast('Thao tác thất bại', 'error');
         } finally {
+            setAttachmentFile(null);
             setLoading(false);
         }
     };
@@ -235,8 +288,8 @@ function ContractFormModal({ initial, onClose, onSaved, pushToast }: any) {
                 </div>
                 <div className="modal-body">
                     <div className="field-group">
-                        <label className="field-label">Mã hợp đồng</label>
-                        <input className="field-input" value={formData.code} onChange={e => setFormData({...formData, code: e.target.value})} />
+                        <label className="field-label">Mã hợp đồng (tự sinh)</label>
+                        <input className="field-input" value={formData.contractCode} readOnly />
                     </div>
                     {!initial && (
                         <div className="field-group">
@@ -246,7 +299,11 @@ function ContractFormModal({ initial, onClose, onSaved, pushToast }: any) {
                     )}
                     <div className="field-group">
                         <label className="field-label">Loại hợp đồng</label>
-                        <input className="field-input" value={formData.type} onChange={e => setFormData({...formData, type: e.target.value})} />
+                        <select className="field-input" value={formData.contractType} onChange={e => setFormData({...formData, contractType: e.target.value})}>
+                            {CONTRACT_TYPE_OPTIONS.map((opt) => (
+                                <option key={opt.value} value={opt.value}>{opt.label}</option>
+                            ))}
+                        </select>
                     </div>
                     <div className="field-group">
                         <label className="field-label">Từ ngày</label>
@@ -255,6 +312,36 @@ function ContractFormModal({ initial, onClose, onSaved, pushToast }: any) {
                     <div className="field-group">
                         <label className="field-label">Đến ngày (Tùy chọn)</label>
                         <input className="field-input" type="date" value={formData.endDate} onChange={e => setFormData({...formData, endDate: e.target.value})} />
+                    </div>
+                    <div className="field-group">
+                        <label className="field-label">Ngày ký (Tùy chọn)</label>
+                        <input className="field-input" type="date" value={formData.signingDate} onChange={e => setFormData({...formData, signingDate: e.target.value})} />
+                    </div>
+                    <div className="field-group">
+                        <label className="field-label">Lương cơ bản</label>
+                        <input className="field-input" type="number" value={formData.baseSalary} onChange={e => setFormData({...formData, baseSalary: e.target.value})} />
+                    </div>
+                    <div className="field-group">
+                        <label className="field-label">Hệ số lương</label>
+                        <input className="field-input" type="number" value={formData.salaryCoefficient} onChange={e => setFormData({...formData, salaryCoefficient: e.target.value})} />
+                    </div>
+                    <div className="field-group">
+                        <label className="field-label">Ghi chú</label>
+                        <input className="field-input" value={formData.note} onChange={e => setFormData({...formData, note: e.target.value})} />
+                    </div>
+                    <div className="field-group">
+                        <label className="field-label">Đính kèm tài liệu</label>
+                        <input
+                            className="field-input"
+                            type="file"
+                            onChange={(e) => {
+                                const file = e.target.files?.[0] || null;
+                                setAttachmentFile(file);
+                            }}
+                        />
+                        {attachmentFile && (
+                            <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>Đã chọn: {attachmentFile.name}</p>
+                        )}
                     </div>
                     <div className="field-group">
                         <label className="field-label">Trạng thái</label>

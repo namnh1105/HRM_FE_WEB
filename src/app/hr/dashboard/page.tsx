@@ -23,9 +23,9 @@ export default function HrDashboardPage() {
     const { data: attStatsData } = useGetAttendanceStatsQuery();
     const { data: leaveStatsData } = useGetLeaveRequestStatsQuery();
 
-    const empStats: any = empStatsData?.data;
-    const attStats: any = attStatsData?.data;
-    const leaveStats: any = leaveStatsData?.data;
+    const empStats: any = (empStatsData as any)?.data;
+    const attStats: any = (attStatsData as any)?.data;
+    const leaveStats: any = (leaveStatsData as any)?.data;
 
     const stats = [
         { label: 'Nhân viên đang làm', value: empStats?.active ?? '—', change: '+0%', icon: Users, color: 'var(--accent-light)' },

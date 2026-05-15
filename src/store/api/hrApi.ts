@@ -1,10 +1,10 @@
 import { baseApi } from './baseApi';
 import type {
-    CreateContractRequest,
     CreateEmployeeRequest,
+    CreateStoreRequest,
     CreateWorkShiftRequest,
-    UpdateContractRequest,
     UpdateEmployeeRequest,
+    UpdateStoreRequest,
     UpdateWorkShiftRequest,
 } from '@/types/hr';
 
@@ -149,10 +149,11 @@ export const hrApi = baseApi.injectEndpoints({
             }),
             providesTags: [{ type: 'LeaveRequest', id: 'PENDING' }],
         }),
-        approveLeaveRequest: builder.mutation<unknown, string>({
-            query: (id) => ({
+        approveLeaveRequest: builder.mutation<unknown, { id: string; body: { approved: boolean; comment?: string } }>({
+            query: ({ id, body }) => ({
                 url: `leave-requests/${id}/approve`,
-                method: 'POST',
+                method: 'PUT',
+                body,
             }),
             invalidatesTags: [
                 { type: 'LeaveRequest', id: 'LIST' },
@@ -163,7 +164,7 @@ export const hrApi = baseApi.injectEndpoints({
         cancelLeaveRequest: builder.mutation<unknown, string>({
             query: (id) => ({
                 url: `leave-requests/${id}/cancel`,
-                method: 'POST',
+                method: 'PUT',
             }),
             invalidatesTags: [
                 { type: 'LeaveRequest', id: 'LIST' },
@@ -171,12 +172,26 @@ export const hrApi = baseApi.injectEndpoints({
                 { type: 'LeaveRequest', id: 'STATS' },
             ],
         }),
+        getAttendancesByStoreHistory: builder.query<unknown, { storeId: string; startDate: string; endDate: string; page?: number; size?: number }>({
+            query: ({ storeId, startDate, endDate, page = 0, size = 10 }) => ({
+                url: `attendances/store/${storeId}/history?startDate=${encodeURIComponent(startDate)}&endDate=${encodeURIComponent(endDate)}&page=${page}&size=${size}`,
+                method: 'GET',
+            }),
+            providesTags: [{ type: 'Attendance', id: 'LIST' }],
+        }),
         getContracts: builder.query<unknown, { page?: number; size?: number }>({
             query: ({ page = 0, size = 10 } = {}) => ({
                 url: `contracts?page=${page}&size=${size}`,
                 method: 'GET',
             }),
             providesTags: [{ type: 'Contract', id: 'LIST' }],
+        }),
+        getContractsByEmployee: builder.query<unknown, { employeeId: string; page?: number; size?: number }>({
+            query: ({ employeeId, page = 0, size = 10 }) => ({
+                url: `contracts/employee/${employeeId}?page=${page}&size=${size}`,
+                method: 'GET',
+            }),
+            providesTags: (_res, _err, arg) => [{ type: 'Contract', id: `EMPLOYEE_${arg.employeeId}` }],
         }),
         getContractStats: builder.query<unknown, void>({
             query: () => ({ url: 'contracts/stats', method: 'GET' }),
@@ -188,7 +203,7 @@ export const hrApi = baseApi.injectEndpoints({
                 method: 'GET',
             }),
         }),
-        createContract: builder.mutation<unknown, CreateContractRequest>({
+        createContract: builder.mutation<unknown, FormData>({
             query: (body) => ({
                 url: `contracts`,
                 method: 'POST',
@@ -196,13 +211,62 @@ export const hrApi = baseApi.injectEndpoints({
             }),
             invalidatesTags: [{ type: 'Contract', id: 'LIST' }, { type: 'Contract', id: 'STATS' }],
         }),
-        updateContract: builder.mutation<unknown, { id: string; body: UpdateContractRequest }>({
+        updateContract: builder.mutation<unknown, { id: string; body: FormData }>({
             query: ({ id, body }) => ({
                 url: `contracts/${id}`,
                 method: 'PUT',
                 body,
             }),
             invalidatesTags: [{ type: 'Contract', id: 'LIST' }, { type: 'Contract', id: 'STATS' }],
+        }),
+        getDegreesByEmployee: builder.query<unknown, { employeeId: string; page?: number; size?: number }>({
+            query: ({ employeeId, page = 0, size = 10 }) => ({
+                url: `degrees/employee/${employeeId}?page=${page}&size=${size}`,
+                method: 'GET',
+            }),
+            providesTags: (_res, _err, arg) => [{ type: 'Degree', id: `EMPLOYEE_${arg.employeeId}` }],
+        }),
+        createDegree: builder.mutation<unknown, FormData>({
+            query: (body) => ({
+                url: 'degrees',
+                method: 'POST',
+                body,
+            }),
+            invalidatesTags: [{ type: 'Degree', id: 'LIST' }],
+        }),
+        getInsuranceRegistrationsByEmployee: builder.query<unknown, string>({
+            query: (employeeId) => ({
+                url: `insurances/registrations/employee/${employeeId}`,
+                method: 'GET',
+            }),
+            providesTags: (_res, _err, id) => [{ type: 'Insurance', id: `EMPLOYEE_${id}` }],
+        }),
+        getStores: builder.query<unknown, void>({
+            query: () => ({ url: 'stores', method: 'GET' }),
+            providesTags: [{ type: 'Store', id: 'LIST' }],
+        }),
+        createStore: builder.mutation<unknown, CreateStoreRequest>({
+            query: (body) => ({
+                url: 'stores',
+                method: 'POST',
+                body,
+            }),
+            invalidatesTags: [{ type: 'Store', id: 'LIST' }],
+        }),
+        updateStore: builder.mutation<unknown, { id: string; body: UpdateStoreRequest }>({
+            query: ({ id, body }) => ({
+                url: `stores/${id}`,
+                method: 'PUT',
+                body,
+            }),
+            invalidatesTags: [{ type: 'Store', id: 'LIST' }],
+        }),
+        deleteStore: builder.mutation<unknown, string>({
+            query: (id) => ({
+                url: `stores/${id}`,
+                method: 'DELETE',
+            }),
+            invalidatesTags: [{ type: 'Store', id: 'LIST' }],
         }),
     }),
     overrideExisting: false,
@@ -228,6 +292,7 @@ export const {
     useApproveLeaveRequestMutation,
     useCancelLeaveRequestMutation,
     useGetContractsQuery,
+    useGetContractsByEmployeeQuery,
     useGetActiveContractsQuery,
     useCreateContractMutation,
     useUpdateContractMutation,
@@ -235,5 +300,13 @@ export const {
     useGetContractStatsQuery,
     useGetLeaveRequestStatsQuery,
     useGetAttendanceStatsQuery,
+    useGetAttendancesByStoreHistoryQuery,
     useGetWorkShiftStatsQuery,
+    useGetDegreesByEmployeeQuery,
+    useCreateDegreeMutation,
+    useGetInsuranceRegistrationsByEmployeeQuery,
+    useGetStoresQuery,
+    useCreateStoreMutation,
+    useUpdateStoreMutation,
+    useDeleteStoreMutation,
 } = hrApi;

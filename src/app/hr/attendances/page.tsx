@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
-import { LogIn, LogOut, ClipboardList } from 'lucide-react';
-import { useCheckInMutation, useCheckOutMutation, useGetMyAttendanceHistoryQuery } from '@/store/api/hrApi';
+import React, { useEffect, useState } from 'react';
+import { ClipboardList } from 'lucide-react';
+import { useGetAttendancesByStoreHistoryQuery, useGetStoresQuery } from '@/store/api/hrApi';
 import PageHeader from '@/components/ui/PageHeader';
 import DataTable from '@/components/ui/DataTable';
 
@@ -44,38 +44,41 @@ export default function AttendancesPage() {
     const [page, setPage] = useState(0);
     const [pageSize, setPageSize] = useState(10);
     const [range, setRange] = useState<{ startDate: string; endDate: string }>({ startDate: '', endDate: '' });
-    const { data, isLoading, isFetching } = useGetMyAttendanceHistoryQuery({ ...range, page, size: pageSize });
-    const [checkIn, { isLoading: isCheckIn }] = useCheckInMutation();
-    const [checkOut, { isLoading: isCheckOut }] = useCheckOutMutation();
+    const { data: storesData } = useGetStoresQuery();
+    const stores = (storesData as any)?.data ?? [];
+    const [storeId, setStoreId] = useState<string>('');
 
-    const rows = (data as any)?.data ?? [];
+    useEffect(() => {
+        if (!storeId && stores.length > 0) {
+            setStoreId(stores[0].id);
+        }
+    }, [stores, storeId]);
+
+    useEffect(() => {
+        if (!range.startDate || !range.endDate) {
+            const end = new Date();
+            const start = new Date();
+            start.setDate(end.getDate() - 30);
+            setRange({
+                startDate: start.toISOString().slice(0, 10),
+                endDate: end.toISOString().slice(0, 10),
+            });
+        }
+    }, [range.endDate, range.startDate]);
+
+    const { data, isLoading, isFetching } = useGetAttendancesByStoreHistoryQuery(
+        { storeId, startDate: range.startDate, endDate: range.endDate, page, size: pageSize },
+        { skip: !storeId || !range.startDate || !range.endDate }
+    );
+
+    const rows: AttendanceRow[] = (data as any)?.data ?? [];
     const meta = (data as any)?.pagination;
 
     return (
         <>
             <PageHeader
                 title="Chấm công"
-                subtitle="Theo dõi lịch sử chấm công và thao tác check-in / check-out."
-                actions={
-                    <>
-                        <button
-                            className="btn btn-sm btn-primary"
-                            type="button"
-                            disabled={isCheckIn || isCheckOut}
-                            onClick={() => checkIn({}).unwrap().catch(() => {})}
-                        >
-                            <LogIn size={14} /> Check-in
-                        </button>
-                        <button
-                            className="btn btn-sm btn-ghost"
-                            type="button"
-                            disabled={isCheckIn || isCheckOut}
-                            onClick={() => checkOut({}).unwrap().catch(() => {})}
-                        >
-                            <LogOut size={14} /> Check-out
-                        </button>
-                    </>
-                }
+                subtitle="Theo dõi lịch sử chấm công toàn chi nhánh."
             />
 
             <DataTable
@@ -84,6 +87,20 @@ export default function AttendancesPage() {
                 isFetching={isFetching}
                 toolbarRight={
                     <div className="field-group" style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                        <select
+                            className="field-input"
+                            value={storeId}
+                            onChange={(e) => {
+                                setPage(0);
+                                setStoreId(e.target.value);
+                            }}
+                            style={{ minWidth: 180 }}
+                        >
+                            {stores.length === 0 && <option value="">Chưa có chi nhánh</option>}
+                            {stores.map((s: any) => (
+                                <option key={s.id} value={s.id}>{s.name}</option>
+                            ))}
+                        </select>
                         <input
                             className="field-input"
                             type="date"

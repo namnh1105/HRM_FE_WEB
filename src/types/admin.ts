@@ -116,3 +116,11 @@ export interface UserRoleAssignmentResponse {
   role: RoleResponse;
   isActive: boolean;
 }
+
+// ─── Stats ───────────────────────────────────────────────────
+export interface ResourceStatsResponse {
+  total: number;
+  active: number;
+  inactive: number;
+  deleted?: number;
+}
