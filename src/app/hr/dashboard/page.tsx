@@ -96,6 +96,7 @@ export default function HrDashboardPage() {
                         { label: 'Chấm công', sub: 'Theo dõi hôm nay', href: '/hr/attendances' },
                         { label: 'Nghỉ phép', sub: 'Duyệt yêu cầu', href: '/hr/leave-requests' },
                         { label: 'Ca làm', sub: 'Quản lý lịch', href: '/hr/work-shifts' },
+                        { label: 'Bảng lương', sub: 'Tính lương theo tháng', href: '/hr/payrolls' },
                     ].map((item) => (
                         <a
                             key={item.href}

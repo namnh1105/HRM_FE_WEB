@@ -38,7 +38,6 @@ export type CreateWorkShiftRequest = {
 export type UpdateWorkShiftRequest = Partial<CreateWorkShiftRequest>;
 
 export type CreateContractRequest = {
-    contractCode: string;
     employeeId: string;
     contractType: string;
     startDate: string;

@@ -321,11 +321,6 @@ function EmployeeDetailModal({ row, onClose, pushToast }: any) {
         return acc;
     }, {});
 
-    const generateContractCode = () => {
-        const uuid = typeof crypto !== 'undefined' && 'randomUUID' in crypto ? crypto.randomUUID() : String(Date.now());
-        return `CTR-${uuid}`;
-    };
-
     const [degreeFile, setDegreeFile] = useState<File | null>(null);
     const [contractFile, setContractFile] = useState<File | null>(null);
 
@@ -346,7 +341,6 @@ function EmployeeDetailModal({ row, onClose, pushToast }: any) {
     });
 
     const [contractForm, setContractForm] = useState({
-        contractCode: '',
         contractType: 'PROBATION',
         startDate: new Date().toISOString().slice(0, 10),
         endDate: '',
@@ -505,14 +499,12 @@ function EmployeeDetailModal({ row, onClose, pushToast }: any) {
     };
 
     const handleCreateContract = async () => {
-        const contractCode = contractForm.contractCode || generateContractCode();
         if (!contractForm.baseSalary) {
             return pushToast?.('Vui lòng nhập lương cơ bản', 'error');
         }
         try {
             const payload = new FormData();
             payload.append('employeeId', employee.id);
-            payload.append('contractCode', contractCode);
             payload.append('contractType', contractForm.contractType);
             payload.append('startDate', contractForm.startDate);
             if (contractForm.endDate) payload.append('endDate', contractForm.endDate);
@@ -526,7 +518,6 @@ function EmployeeDetailModal({ row, onClose, pushToast }: any) {
             setShowCreateContract(false);
             setContractFile(null);
             setContractForm({
-                contractCode: '',
                 contractType: 'PROBATION',
                 startDate: new Date().toISOString().slice(0, 10),
                 endDate: '',
@@ -868,12 +859,7 @@ function EmployeeDetailModal({ row, onClose, pushToast }: any) {
                                 <div style={sectionTitleStyle}>Hợp đồng</div>
                                 <button
                                     className="btn btn-sm btn-primary"
-                                    onClick={() => {
-                                        if (!contractForm.contractCode) {
-                                            setContractForm((prev) => ({ ...prev, contractCode: generateContractCode() }));
-                                        }
-                                        setShowCreateContract(true);
-                                    }}
+                                    onClick={() => setShowCreateContract(true)}
                                 >
                                     Thêm hợp đồng
                                 </button>
@@ -886,7 +872,6 @@ function EmployeeDetailModal({ row, onClose, pushToast }: any) {
                                 <table>
                                     <thead>
                                         <tr>
-                                            <th>Mã HĐ</th>
                                             <th>Loại</th>
                                             <th>Từ ngày</th>
                                             <th>Đến ngày</th>
@@ -897,7 +882,6 @@ function EmployeeDetailModal({ row, onClose, pushToast }: any) {
                                     <tbody>
                                         {contracts.map((c: any) => (
                                             <tr key={c.id}>
-                                                <td className="td-primary">{c.contractCode || c.code || '—'}</td>
                                                 <td style={{ color: 'var(--text-muted)' }}>
                                                     {CONTRACT_TYPE_LABELS[c.contractType || c.type || ''] || c.contractType || c.type || '—'}
                                                 </td>
@@ -1069,10 +1053,6 @@ function CreateContractModal({ open, onClose, onSubmit, loading, form, setForm, 
                     <button className="btn btn-icon btn-ghost" onClick={onClose}><X size={16} /></button>
                 </div>
                 <div className="modal-body">
-                    <div className="field-group">
-                        <label className="field-label">Mã hợp đồng (tự sinh)</label>
-                        <input className="field-input" value={form.contractCode} readOnly />
-                    </div>
                     <div className="field-group">
                         <label className="field-label">Loại hợp đồng</label>
                         <select className="field-input" value={form.contractType} onChange={e => setForm({ ...form, contractType: e.target.value })}>

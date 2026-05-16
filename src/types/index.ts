@@ -4,3 +4,4 @@ export * from './api-response';
 export * from './store';
 export * from './admin';
 export * from './hr';
+export * from './payroll';

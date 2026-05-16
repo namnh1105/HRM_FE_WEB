@@ -2,12 +2,18 @@
 
 import React, { useEffect, useState } from 'react';
 import { ClipboardList } from 'lucide-react';
-import { useGetAttendancesByStoreHistoryQuery, useGetStoresQuery } from '@/store/api/hrApi';
+import {
+    useGetAttendancesByStoreHistoryQuery,
+    useGetAttendanceHistoryByEmployeeQuery,
+    useGetEmployeesByStoreQuery,
+    useGetStoresQuery,
+} from '@/store/api/hrApi';
 import PageHeader from '@/components/ui/PageHeader';
 import DataTable from '@/components/ui/DataTable';
 
 type AttendanceRow = {
     id?: string;
+    employeeName?: string;
     workDate?: string;
     checkInTime?: string;
     checkOutTime?: string;
@@ -47,12 +53,18 @@ export default function AttendancesPage() {
     const { data: storesData } = useGetStoresQuery();
     const stores = (storesData as any)?.data ?? [];
     const [storeId, setStoreId] = useState<string>('');
+    const [employeeId, setEmployeeId] = useState<string>('');
 
     useEffect(() => {
         if (!storeId && stores.length > 0) {
             setStoreId(stores[0].id);
         }
     }, [stores, storeId]);
+
+    useEffect(() => {
+        setEmployeeId('');
+        setPage(0);
+    }, [storeId]);
 
     useEffect(() => {
         if (!range.startDate || !range.endDate) {
@@ -66,13 +78,27 @@ export default function AttendancesPage() {
         }
     }, [range.endDate, range.startDate]);
 
-    const { data, isLoading, isFetching } = useGetAttendancesByStoreHistoryQuery(
+    const { data: employeesData } = useGetEmployeesByStoreQuery(
+        { storeId, page: 0, size: 200 },
+        { skip: !storeId }
+    );
+    const employees = (employeesData as any)?.data ?? [];
+
+    const { data: storeAttendanceData, isLoading: storeLoading, isFetching: storeFetching } = useGetAttendancesByStoreHistoryQuery(
         { storeId, startDate: range.startDate, endDate: range.endDate, page, size: pageSize },
-        { skip: !storeId || !range.startDate || !range.endDate }
+        { skip: !storeId || !range.startDate || !range.endDate || !!employeeId }
     );
 
-    const rows: AttendanceRow[] = (data as any)?.data ?? [];
-    const meta = (data as any)?.pagination;
+    const { data: employeeAttendanceData, isLoading: employeeLoading, isFetching: employeeFetching } = useGetAttendanceHistoryByEmployeeQuery(
+        { employeeId, startDate: range.startDate, endDate: range.endDate, page, size: pageSize },
+        { skip: !employeeId || !range.startDate || !range.endDate }
+    );
+
+    const activeData = employeeId ? employeeAttendanceData : storeAttendanceData;
+    const rows: AttendanceRow[] = (activeData as any)?.data ?? [];
+    const meta = (activeData as any)?.pagination;
+    const isLoading = employeeId ? employeeLoading : storeLoading;
+    const isFetching = employeeId ? employeeFetching : storeFetching;
 
     return (
         <>
@@ -99,6 +125,21 @@ export default function AttendancesPage() {
                             {stores.length === 0 && <option value="">Chưa có chi nhánh</option>}
                             {stores.map((s: any) => (
                                 <option key={s.id} value={s.id}>{s.name}</option>
+                            ))}
+                        </select>
+                        <select
+                            className="field-input"
+                            value={employeeId}
+                            onChange={(e) => {
+                                setPage(0);
+                                setEmployeeId(e.target.value);
+                            }}
+                            style={{ minWidth: 200 }}
+                            disabled={!storeId}
+                        >
+                            <option value="">Tất cả nhân viên</option>
+                            {employees.map((emp: any) => (
+                                <option key={emp.id} value={emp.id}>{emp.fullName || emp.email}</option>
                             ))}
                         </select>
                         <input
@@ -141,6 +182,7 @@ export default function AttendancesPage() {
                 <table>
                     <thead>
                         <tr>
+                            <th>Nhân viên</th>
                             <th>Ngày</th>
                             <th>Giờ vào</th>
                             <th>Giờ ra</th>
@@ -151,14 +193,14 @@ export default function AttendancesPage() {
                         {isLoading ? (
                             Array.from({ length: 5 }).map((_, i) => (
                                 <tr key={i}>
-                                    {Array.from({ length: 4 }).map((__, j) => (
+                                    {Array.from({ length: 5 }).map((__, j) => (
                                         <td key={j}><div className="skeleton" style={{ height: 16, width: '80%' }} /></td>
                                     ))}
                                 </tr>
                             ))
                         ) : rows.length === 0 ? (
                             <tr>
-                                <td colSpan={4}>
+                                <td colSpan={5}>
                                     <div className="empty-state">
                                         <ClipboardList size={40} className="empty-icon" />
                                         <p className="empty-text">Không có dữ liệu chấm công</p>
@@ -168,6 +210,7 @@ export default function AttendancesPage() {
                         ) : (
                             rows.map((row, idx) => (
                                 <tr key={row.id ?? idx}>
+                                    <td className="td-primary">{row.employeeName ?? '—'}</td>
                                     <td className="td-primary">{formatDate(row.workDate)}</td>
                                     <td>{formatTime(row.checkInTime)}</td>
                                     <td>{formatTime(row.checkOutTime)}</td>

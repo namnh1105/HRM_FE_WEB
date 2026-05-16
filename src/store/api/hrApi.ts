@@ -7,6 +7,8 @@ import type {
     UpdateStoreRequest,
     UpdateWorkShiftRequest,
 } from '@/types/hr';
+import type { ApiResponse } from '@/types/api-response';
+import type { PayrollSummary, AutoGeneratePayrollRequest } from '@/types';
 
 export const hrApi = baseApi.injectEndpoints({
     endpoints: (builder) => ({
@@ -17,6 +19,13 @@ export const hrApi = baseApi.injectEndpoints({
             }),
             providesTags: [{ type: 'Employee', id: 'LIST' }],
         }),
+            getEmployeesByStore: builder.query<unknown, { storeId: string; page?: number; size?: number }>({
+                query: ({ storeId, page = 0, size = 50 }) => ({
+                    url: `employees/store/${storeId}?page=${page}&size=${size}`,
+                    method: 'GET',
+                }),
+                providesTags: (_res, _err, arg) => [{ type: 'Employee', id: `STORE_${arg.storeId}` }],
+            }),
         getEmployeeStats: builder.query<unknown, void>({
             query: () => ({ url: 'employees/stats', method: 'GET' }),
             providesTags: [{ type: 'Employee', id: 'STATS' }],
@@ -59,6 +68,18 @@ export const hrApi = baseApi.injectEndpoints({
                 method: 'GET',
             }),
         }),
+            getAttendanceHistoryByEmployee: builder.query<unknown, { employeeId: string; startDate?: string; endDate?: string; page?: number; size?: number }>({
+                query: ({ employeeId, startDate, endDate, page = 0, size = 10 }) => ({
+                    url: `attendances/employee/${employeeId}/history?${[
+                        startDate ? `startDate=${encodeURIComponent(startDate)}` : null,
+                        endDate ? `endDate=${encodeURIComponent(endDate)}` : null,
+                        `page=${page}`,
+                        `size=${size}`,
+                    ].filter(Boolean).join('&')}`,
+                    method: 'GET',
+                }),
+                providesTags: (_res, _err, arg) => [{ type: 'Attendance', id: `EMPLOYEE_${arg.employeeId}` }],
+            }),
         getMyAttendanceToday: builder.query<unknown, void>({
             query: () => ({
                 url: `attendances/me/today`,
@@ -268,16 +289,33 @@ export const hrApi = baseApi.injectEndpoints({
             }),
             invalidatesTags: [{ type: 'Store', id: 'LIST' }],
         }),
+        getPayrollsByMonthYear: builder.query<ApiResponse<PayrollSummary[]>, { month: number; year: number }>({
+            query: ({ month, year }) => ({
+                url: `payrolls/month/${month}/year/${year}`,
+                method: 'GET',
+            }),
+            providesTags: [{ type: 'Payroll', id: 'LIST' }],
+        }),
+        autoGeneratePayrolls: builder.mutation<ApiResponse<PayrollSummary[]>, AutoGeneratePayrollRequest>({
+            query: (body) => ({
+                url: 'payrolls/auto-generate',
+                method: 'POST',
+                body,
+            }),
+            invalidatesTags: [{ type: 'Payroll', id: 'LIST' }],
+        }),
     }),
     overrideExisting: false,
 });
 
 export const {
     useGetEmployeesQuery,
+        useGetEmployeesByStoreQuery,
     useGetEmployeeByIdQuery,
     useCreateEmployeeMutation,
     useUpdateEmployeeMutation,
     useGetMyAttendanceHistoryQuery,
+        useGetAttendanceHistoryByEmployeeQuery,
     useGetMyAttendanceTodayQuery,
     useCheckInMutation,
     useCheckOutMutation,
@@ -309,4 +347,6 @@ export const {
     useCreateStoreMutation,
     useUpdateStoreMutation,
     useDeleteStoreMutation,
+    useGetPayrollsByMonthYearQuery,
+    useAutoGeneratePayrollsMutation,
 } = hrApi;

@@ -15,6 +15,7 @@ import {
     Clock3,
     CalendarCheck2,
     FileText,
+    Wallet,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
@@ -109,6 +110,13 @@ const NAV_ITEMS: NavItem[] = [
         label: 'Hợp đồng',
         href: '/hr/contracts',
         icon: FileText,
+        roles: ['HR'],
+        section: 'Quản lý nhân sự',
+    },
+    {
+        label: 'Bảng lương',
+        href: '/hr/payrolls',
+        icon: Wallet,
         roles: ['HR'],
         section: 'Quản lý nhân sự',
     },
