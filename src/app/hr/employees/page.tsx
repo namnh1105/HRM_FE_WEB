@@ -46,6 +46,13 @@ function formatDate(val: string | undefined) {
     return isNaN(d.getTime()) ? val : d.toLocaleDateString('vi-VN');
 }
 
+function formatGender(val: string | undefined) {
+    if (val === 'MALE') return 'Nam';
+    if (val === 'FEMALE') return 'Nữ';
+    if (val === 'OTHER') return 'Khác';
+    return val || '—';
+}
+
 export default function EmployeesPage() {
     const { toasts, push: pushToast } = useToast();
     const [page, setPage] = useState(0);
@@ -54,11 +61,11 @@ export default function EmployeesPage() {
     const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'inactive'>('all');
 
     const { data, isLoading, isFetching, refetch } = useGetEmployeesQuery({ page, size: pageSize });
-    
+
     // Fetch stats
     const { data: statsData } = useGetEmployeeStatsQuery();
     const stats: any = (statsData as any)?.data;
-    
+
     // Đồng bộ cách lấy data và pagination giống Roles page
     const employees = (data as any)?.data ?? [];
     const meta = (data as any)?.pagination;
@@ -70,8 +77,8 @@ export default function EmployeesPage() {
         let list = [...employees];
         const q = search.toLowerCase();
         if (q) {
-            list = list.filter(r => 
-                r.fullName?.toLowerCase().includes(q) || 
+            list = list.filter(r =>
+                r.fullName?.toLowerCase().includes(q) ||
                 r.email?.toLowerCase().includes(q) ||
                 r.phone?.toLowerCase().includes(q)
             );
@@ -192,9 +199,9 @@ export default function EmployeesPage() {
 
             {/* Modals - Giữ lại Logic Form tương ứng */}
             {formModal.open && (
-                <EmployeeFormModal 
-                    initial={formModal.employee} 
-                    onClose={() => setFormModal({ open: false })} 
+                <EmployeeFormModal
+                    initial={formModal.employee}
+                    onClose={() => setFormModal({ open: false })}
                     onSaved={refetch}
                     pushToast={pushToast}
                 />
@@ -213,7 +220,7 @@ function EmployeeFormModal({ initial, onClose, onSaved, pushToast }: any) {
     const [create] = useCreateEmployeeMutation();
     const [update] = useUpdateEmployeeMutation();
     const [loading, setLoading] = useState(false);
-    
+
     const [formData, setFormData] = useState({
         fullName: initial?.fullName || '',
         email: initial?.email || '',
@@ -251,19 +258,19 @@ function EmployeeFormModal({ initial, onClose, onSaved, pushToast }: any) {
                 <div className="modal-body">
                     <div className="field-group">
                         <label className="field-label">Họ và tên</label>
-                        <input className="field-input" value={formData.fullName} onChange={e => setFormData({...formData, fullName: e.target.value})} />
+                        <input className="field-input" value={formData.fullName} onChange={e => setFormData({ ...formData, fullName: e.target.value })} />
                     </div>
                     <div className="field-group">
                         <label className="field-label">Email</label>
-                        <input className="field-input" type="email" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} />
+                        <input className="field-input" type="email" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} />
                     </div>
                     <div className="field-group">
                         <label className="field-label">Điện thoại</label>
-                        <input className="field-input" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} />
+                        <input className="field-input" value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })} />
                     </div>
                     <div className="field-group">
                         <label className="field-label">Trạng thái</label>
-                        <select className="field-input" value={formData.employmentStatus} onChange={e => setFormData({...formData, employmentStatus: e.target.value})}>
+                        <select className="field-input" value={formData.employmentStatus} onChange={e => setFormData({ ...formData, employmentStatus: e.target.value })}>
                             <option value="ACTIVE">Đang làm việc</option>
                             <option value="INACTIVE">Không hoạt động</option>
                             <option value="TERMINATED">Đã nghỉ</option>
@@ -613,7 +620,12 @@ function EmployeeDetailModal({ row, onClose, pushToast }: any) {
                                         </div>
                                         <div className="field-group">
                                             <label className="field-label">Giới tính</label>
-                                            <input className="field-input" value={overviewForm.gender} onChange={e => setOverviewForm({ ...overviewForm, gender: e.target.value })} />
+                                            <select className="field-input" value={overviewForm.gender} onChange={e => setOverviewForm({ ...overviewForm, gender: e.target.value })}>
+                                                <option value="">Chọn giới tính</option>
+                                                <option value="MALE">Nam</option>
+                                                <option value="FEMALE">Nữ</option>
+                                                <option value="OTHER">Khác</option>
+                                            </select>
                                         </div>
                                         <div className="field-group">
                                             <label className="field-label">Ngày sinh</label>
@@ -640,11 +652,10 @@ function EmployeeDetailModal({ row, onClose, pushToast }: any) {
                                 </div>
                             ) : (
                                 <div style={gridStyle}>
-                                    {infoItem('Mã nhân viên', employee.employeeCode)}
                                     {infoItem('Họ tên', employee.fullName)}
                                     {infoItem('Email', employee.email)}
                                     {infoItem('Điện thoại', employee.phone)}
-                                    {infoItem('Giới tính', employee.gender)}
+                                    {infoItem('Giới tính', formatGender(employee.gender))}
                                     {infoItem('Ngày sinh', formatDate(employee.dateOfBirth))}
                                     {infoItem('Số CCCD/CMND', employee.idCardNumber)}
                                     {infoItem('Trạng thái', <StatusBadge status={employee.employmentStatus} />)}

@@ -288,7 +288,7 @@ function ContractFormModal({ initial, onClose, onSaved, pushToast }: any) {
                     <p className="modal-title">{initial ? 'Sửa hợp đồng' : 'Thêm hợp đồng'}</p>
                     <button className="btn btn-icon btn-ghost" onClick={onClose}><X size={16} /></button>
                 </div>
-                <div className="modal-body">
+                <div className="modal-body" style={{ overflowY: 'auto', maxHeight: '65vh', paddingRight: 4 }}>
                     {!initial && (
                         <div className="field-group">
                             <label className="field-label">ID Nhân viên (UUID)</label>
