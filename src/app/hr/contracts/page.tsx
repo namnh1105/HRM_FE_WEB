@@ -33,6 +33,7 @@ const CONTRACT_TYPE_OPTIONS = [
     { value: 'INDEFINITE_TERM', label: 'Không xác định thời hạn' },
     { value: 'SEASONAL', label: 'Thời vụ' },
     { value: 'PART_TIME', label: 'Bán thời gian' },
+    { value: 'MONTHLY', label: 'Trả lương theo tháng' },
 ];
 
 const CONTRACT_TYPE_LABELS = CONTRACT_TYPE_OPTIONS.reduce<Record<string, string>>((acc, cur) => {
@@ -48,6 +49,10 @@ function formatDate(val: string | undefined) {
 
 function StatusBadge({ status }: { status?: string }) {
     const s = (status ?? '').toUpperCase();
+    if (s === 'ACTIVE') return <span className="badge badge-green">Hiệu lực</span>;
+    if (s === 'EXPIRED') return <span className="badge badge-red">Hết hạn</span>;
+    if (s === 'TERMINATED') return <span className="badge badge-amber">Đã chấm dứt</span>;
+    if (s === 'RENEWED') return <span className="badge badge-blue">Đã gia hạn</span>;
     if (s.includes('ACTIVE')) return <span className="badge badge-green">Hiệu lực</span>;
     if (s.includes('EXPIRED') || s.includes('ENDED')) return <span className="badge badge-red">Hết hạn</span>;
     if (s.includes('PENDING')) return <span className="badge badge-amber">Chờ duyệt</span>;
@@ -145,7 +150,6 @@ export default function ContractsPage() {
                 <table>
                     <thead>
                         <tr>
-                            <th>Mã HĐ</th>
                             <th>Nhân viên</th>
                             <th>Loại</th>
                             <th>Từ ngày</th>
@@ -158,14 +162,14 @@ export default function ContractsPage() {
                         {isLoading ? (
                             Array.from({ length: 5 }).map((_, i) => (
                                 <tr key={i}>
-                                    {Array.from({ length: 7 }).map((__, j) => (
+                                    {Array.from({ length: 6 }).map((__, j) => (
                                         <td key={j}><div className="skeleton" style={{ height: 16, width: '80%' }} /></td>
                                     ))}
                                 </tr>
                             ))
                         ) : filtered.length === 0 ? (
                             <tr>
-                                <td colSpan={7}>
+                                <td colSpan={6}>
                                     <div className="empty-state">
                                         <FileText size={40} className="empty-icon" />
                                         <p className="empty-text">Không tìm thấy hợp đồng nào</p>
@@ -175,11 +179,6 @@ export default function ContractsPage() {
                         ) : (
                             filtered.map((row) => (
                                 <tr key={row.id}>
-                                    <td>
-                                        <code style={{ fontSize: 12, color: 'var(--accent-light)', background: 'var(--accent-glow)', padding: '2px 6px', borderRadius: 4 }}>
-                                            {row.contractCode || row.code}
-                                        </code>
-                                    </td>
                                     <td className="td-primary">{row.employeeName || row.employee?.fullName || '—'}</td>
                                     <td style={{ color: 'var(--text-muted)', fontSize: 13 }}>
                                         {CONTRACT_TYPE_LABELS[row.contractType || row.type || ''] || row.contractType || row.type}
@@ -234,6 +233,7 @@ function ContractFormModal({ initial, onClose, onSaved, pushToast }: any) {
         signingDate: initial?.signingDate?.slice(0, 10) || '',
         baseSalary: initial?.baseSalary ?? '',
         salaryCoefficient: initial?.salaryCoefficient ?? '',
+        allowance: initial?.allowance ?? '',
         status: initial?.status || 'ACTIVE',
         note: initial?.note || '',
         attachmentUrl: initial?.attachmentUrl || '',
@@ -249,6 +249,7 @@ function ContractFormModal({ initial, onClose, onSaved, pushToast }: any) {
                 if (formData.endDate) updateBody.append('endDate', formData.endDate);
                 if (formData.baseSalary) updateBody.append('baseSalary', String(formData.baseSalary));
                 if (formData.salaryCoefficient) updateBody.append('salaryCoefficient', String(formData.salaryCoefficient));
+                if (formData.allowance) updateBody.append('allowance', String(formData.allowance));
                 if (formData.status) updateBody.append('status', formData.status);
                 if (formData.note) updateBody.append('note', formData.note);
                 if (attachmentFile) updateBody.append('file', attachmentFile);
@@ -264,6 +265,7 @@ function ContractFormModal({ initial, onClose, onSaved, pushToast }: any) {
                 if (formData.signingDate) createBody.append('signingDate', formData.signingDate);
                 createBody.append('baseSalary', String(formData.baseSalary));
                 if (formData.salaryCoefficient) createBody.append('salaryCoefficient', String(formData.salaryCoefficient));
+                if (formData.allowance) createBody.append('allowance', String(formData.allowance));
                 if (formData.note) createBody.append('note', formData.note);
                 if (attachmentFile) createBody.append('file', attachmentFile);
                 await create(createBody).unwrap();
@@ -287,10 +289,6 @@ function ContractFormModal({ initial, onClose, onSaved, pushToast }: any) {
                     <button className="btn btn-icon btn-ghost" onClick={onClose}><X size={16} /></button>
                 </div>
                 <div className="modal-body">
-                    <div className="field-group">
-                        <label className="field-label">Mã hợp đồng (tự sinh)</label>
-                        <input className="field-input" value={formData.contractCode} readOnly />
-                    </div>
                     {!initial && (
                         <div className="field-group">
                             <label className="field-label">ID Nhân viên (UUID)</label>
@@ -326,6 +324,10 @@ function ContractFormModal({ initial, onClose, onSaved, pushToast }: any) {
                         <input className="field-input" type="number" value={formData.salaryCoefficient} onChange={e => setFormData({...formData, salaryCoefficient: e.target.value})} />
                     </div>
                     <div className="field-group">
+                        <label className="field-label">Phụ cấp</label>
+                        <input className="field-input" type="number" value={formData.allowance} onChange={e => setFormData({...formData, allowance: e.target.value})} />
+                    </div>
+                    <div className="field-group">
                         <label className="field-label">Ghi chú</label>
                         <input className="field-input" value={formData.note} onChange={e => setFormData({...formData, note: e.target.value})} />
                     </div>
@@ -345,7 +347,12 @@ function ContractFormModal({ initial, onClose, onSaved, pushToast }: any) {
                     </div>
                     <div className="field-group">
                         <label className="field-label">Trạng thái</label>
-                        <input className="field-input" value={formData.status} onChange={e => setFormData({...formData, status: e.target.value})} />
+                        <select className="field-input" value={formData.status} onChange={e => setFormData({...formData, status: e.target.value})}>
+                            <option value="ACTIVE">Hiệu lực</option>
+                            <option value="EXPIRED">Hết hạn</option>
+                            <option value="TERMINATED">Đã chấm dứt</option>
+                            <option value="RENEWED">Đã gia hạn</option>
+                        </select>
                     </div>
                 </div>
                 <div className="modal-footer">

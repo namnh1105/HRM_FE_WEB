@@ -35,6 +35,7 @@ export type AutoGeneratePayrollRequest = {
     month: number;
     year: number;
     latePenaltyPerShift?: number;
+    latePenaltyPerHour?: number;
     allowance?: number;
     overwriteExisting?: boolean;
 };

@@ -35,6 +35,7 @@ export default function PayrollsPage() {
     const [monthPicker, setMonthPicker] = useState<string>(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`);
 
     const [latePenaltyPerShift, setLatePenaltyPerShift] = useState<number>(0);
+    const [latePenaltyPerHour, setLatePenaltyPerHour] = useState<number>(0);
     const [allowance, setAllowance] = useState<number>(0);
     const [overwriteExisting, setOverwriteExisting] = useState<boolean>(false);
 
@@ -69,6 +70,7 @@ export default function PayrollsPage() {
                 month,
                 year,
                 latePenaltyPerShift,
+                latePenaltyPerHour,
                 allowance,
                 overwriteExisting,
             }).unwrap();
@@ -132,8 +134,17 @@ export default function PayrollsPage() {
                             min={0}
                             value={latePenaltyPerShift}
                             onChange={(e) => setLatePenaltyPerShift(Number(e.target.value))}
-                            placeholder="Phạt đi muộn/ca"
-                            style={{ width: 160 }}
+                            placeholder="Phạt muộn/ca"
+                            style={{ width: 130 }}
+                        />
+                        <input
+                            className="field-input"
+                            type="number"
+                            min={0}
+                            value={latePenaltyPerHour}
+                            onChange={(e) => setLatePenaltyPerHour(Number(e.target.value))}
+                            placeholder="Phạt muộn/giờ (Tháng)"
+                            style={{ width: 180 }}
                         />
                         <input
                             className="field-input"
