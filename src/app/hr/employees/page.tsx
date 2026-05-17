@@ -53,6 +53,15 @@ function formatGender(val: string | undefined) {
     return val || '—';
 }
 
+const DEGREE_LEVEL_LABELS: Record<string, string> = {
+    HIGH_SCHOOL: 'Trung học phổ thông',
+    COLLEGE: 'Cao đẳng',
+    BACHELOR: 'Cử nhân / Đại học',
+    MASTER: 'Thạc sĩ',
+    DOCTORATE: 'Tiến sĩ',
+    OTHER: 'Khác'
+};
+
 export default function EmployeesPage() {
     const { toasts, push: pushToast } = useToast();
     const [page, setPage] = useState(0);
@@ -851,7 +860,7 @@ function EmployeeDetailModal({ row, onClose, pushToast }: any) {
                                         {degrees.map((deg: any) => (
                                             <tr key={deg.id}>
                                                 <td className="td-primary">{deg.degreeName || '—'}</td>
-                                                <td style={{ color: 'var(--text-muted)' }}>{deg.degreeLevel || '—'}</td>
+                                                <td style={{ color: 'var(--text-muted)' }}>{DEGREE_LEVEL_LABELS[deg.degreeLevel] || deg.degreeLevel || '—'}</td>
                                                 <td style={{ color: 'var(--text-muted)' }}>{deg.major || '—'}</td>
                                                 <td style={{ color: 'var(--text-muted)' }}>{deg.institution || '—'}</td>
                                                 <td style={{ color: 'var(--text-muted)', fontSize: 12 }}>{formatDate(deg.graduationDate)}</td>
@@ -1017,7 +1026,15 @@ function CreateDegreeModal({ open, onClose, onSubmit, loading, form, setForm, fi
                     </div>
                     <div className="field-group">
                         <label className="field-label">Cấp độ</label>
-                        <input className="field-input" value={form.degreeLevel} onChange={e => setForm({ ...form, degreeLevel: e.target.value })} />
+                        <select className="field-input" value={form.degreeLevel} onChange={e => setForm({ ...form, degreeLevel: e.target.value })}>
+                            <option value="">Chọn cấp độ</option>
+                            <option value="HIGH_SCHOOL">Trung học phổ thông</option>
+                            <option value="COLLEGE">Cao đẳng</option>
+                            <option value="BACHELOR">Cử nhân / Đại học</option>
+                            <option value="MASTER">Thạc sĩ</option>
+                            <option value="DOCTORATE">Tiến sĩ</option>
+                            <option value="OTHER">Khác</option>
+                        </select>
                     </div>
                     <div className="field-group">
                         <label className="field-label">Chuyên ngành</label>
