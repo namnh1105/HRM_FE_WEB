@@ -11,6 +11,7 @@ export type PayrollSummary = {
     salaryCoefficient: number;
     workingDays: number;
     actualWorkingDays: number;
+    workingHours?: number;
     overtimeHours: number;
     overtimePay: number;
     allowance: number;

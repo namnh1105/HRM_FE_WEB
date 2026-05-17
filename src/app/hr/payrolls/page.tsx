@@ -37,7 +37,7 @@ export default function PayrollsPage() {
     const [latePenaltyPerShift, setLatePenaltyPerShift] = useState<number>(0);
     const [latePenaltyPerHour, setLatePenaltyPerHour] = useState<number>(0);
     const [allowance, setAllowance] = useState<number>(0);
-    const [overwriteExisting, setOverwriteExisting] = useState<boolean>(false);
+    const [overwriteExisting, setOverwriteExisting] = useState<boolean>(true);
 
     const { data, isLoading, isFetching, refetch } = useGetPayrollsByMonthYearQuery(
         { month, year },
@@ -173,9 +173,11 @@ export default function PayrollsPage() {
                     <thead>
                         <tr>
                             <th>Nhân viên</th>
-                            <th>Mã NV</th>
+                            <th>Lương cơ bản</th>
+                            <th>Hệ số</th>
                             <th>Ca dự kiến</th>
                             <th>Ca thực tế</th>
+                            <th>Giờ làm</th>
                             <th>Đi muộn</th>
                             <th>Phạt</th>
                             <th>Phụ cấp</th>
@@ -187,14 +189,14 @@ export default function PayrollsPage() {
                         {isLoading ? (
                             Array.from({ length: 6 }).map((_, i) => (
                                 <tr key={i}>
-                                    {Array.from({ length: 9 }).map((__, j) => (
+                                    {Array.from({ length: 11 }).map((__, j) => (
                                         <td key={j}><div className="skeleton" style={{ height: 16, width: '80%' }} /></td>
                                     ))}
                                 </tr>
                             ))
                         ) : rows.length === 0 ? (
                             <tr>
-                                <td colSpan={9}>
+                                <td colSpan={11}>
                                     <div className="empty-state">
                                         <Wallet size={40} className="empty-icon" />
                                         <p className="empty-text">Chưa có dữ liệu bảng lương</p>
@@ -205,9 +207,11 @@ export default function PayrollsPage() {
                             rows.map((row) => (
                                 <tr key={row.id}>
                                     <td className="td-primary">{row.employeeName}</td>
-                                    <td style={{ color: 'var(--text-muted)' }}>{row.employeeCode ?? '—'}</td>
+                                    <td style={{ color: 'var(--text-muted)' }}>{formatMoney(row.baseSalary)}</td>
+                                    <td style={{ color: 'var(--text-muted)' }}>{row.salaryCoefficient ?? '1.0'}</td>
                                     <td>{row.workingDays ?? 0}</td>
                                     <td>{row.actualWorkingDays ?? 0}</td>
+                                    <td style={{ fontWeight: '500' }}>{row.workingHours ?? 0} giờ</td>
                                     <td>{row.lateCount ?? 0}</td>
                                     <td style={{ color: 'var(--text-muted)' }}>{formatMoney(row.latePenalty)}</td>
                                     <td style={{ color: 'var(--text-muted)' }}>{formatMoney(row.allowance)}</td>
