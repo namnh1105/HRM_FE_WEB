@@ -15,6 +15,7 @@ import DataTable from '@/components/ui/DataTable';
 import { FilterPills, SearchBox } from '@/components/ui/ToolbarControls';
 import { useToast } from '@/hooks/useToast';
 import ToastStack from '@/components/ToastStack';
+import { usePermissions } from '@/hooks/usePermissions';
 
 type WorkShiftRow = {
     id: string;
@@ -39,6 +40,7 @@ function formatDate(val: string | undefined) {
 }
 
 export default function WorkShiftsPage() {
+    const { hasPermission } = usePermissions();
     const { toasts, push: pushToast } = useToast();
     const [page, setPage] = useState(0);
     const [pageSize, setPageSize] = useState(10);
@@ -84,9 +86,11 @@ export default function WorkShiftsPage() {
                 title="Ca làm việc"
                 subtitle="Cấu hình danh sách ca làm và giờ hành chính"
                 actions={
-                    <button type="button" className="btn btn-primary" onClick={() => setFormModal({ open: true })}>
-                        <Plus size={15} /> Thêm ca
-                    </button>
+                    hasPermission('CREATE_WORK_SHIFT') && (
+                        <button type="button" className="btn btn-primary" onClick={() => setFormModal({ open: true })}>
+                            <Plus size={15} /> Thêm ca
+                        </button>
+                    )
                 }
             />
 
@@ -177,12 +181,16 @@ export default function WorkShiftsPage() {
                                     <td style={{ color: 'var(--text-muted)', fontSize: 12 }}>{formatDate(row.createdAt)}</td>
                                     <td>
                                         <div style={{ display: 'flex', gap: 6 }}>
-                                            <button className="btn btn-sm btn-primary" onClick={() => setFormModal({ open: true, shift: row })}>
-                                                <Pencil size={14} /> Sửa
-                                            </button>
-                                            <button className="btn btn-sm btn-danger" onClick={() => setConfirmDelete(row)}>
-                                                <Trash2 size={14} /> Xóa
-                                            </button>
+                                            {hasPermission('UPDATE_WORK_SHIFT') && (
+                                                <button className="btn btn-sm btn-primary" onClick={() => setFormModal({ open: true, shift: row })}>
+                                                    <Pencil size={14} /> Sửa
+                                                </button>
+                                            )}
+                                            {hasPermission('DELETE_WORK_SHIFT') && (
+                                                <button className="btn btn-sm btn-danger" onClick={() => setConfirmDelete(row)}>
+                                                    <Trash2 size={14} /> Xóa
+                                                </button>
+                                            )}
                                         </div>
                                     </td>
                                 </tr>

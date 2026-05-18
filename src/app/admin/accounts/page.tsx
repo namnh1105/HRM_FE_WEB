@@ -35,6 +35,7 @@ import EntityStatusFilters, { type EntityFilterStatus } from '@/components/ui/En
 import ConfirmModal from '@/components/ui/ConfirmModal';
 import ToastStack from '@/components/ToastStack';
 import { useToast } from '@/hooks/useToast';
+import { usePermissions } from '@/hooks/usePermissions';
 
 function RoleManagerModal({
     user,
@@ -249,6 +250,7 @@ function CreateUserModal({
 }
 
 export default function AccountsPage() {
+    const { hasPermission } = usePermissions();
     const [page, setPage] = useState(0);
     const [pageSize, setPageSize] = useState(10);
     const [search, setSearch] = useState('');
@@ -372,9 +374,11 @@ export default function AccountsPage() {
                 title="Quản lý tài khoản"
                 subtitle="Quản lý người dùng và vai trò hệ thống"
                 actions={
-                    <button type="button" className="btn btn-primary" id="add-user-btn" onClick={() => setCreateUserOpen(true)}>
-                        <Plus size={15} /> Thêm người dùng
-                    </button>
+                    hasPermission('CREATE_USER') && (
+                        <button type="button" className="btn btn-primary" id="add-user-btn" onClick={() => setCreateUserOpen(true)}>
+                            <Plus size={15} /> Thêm người dùng
+                        </button>
+                    )
                 }
             />
 
@@ -486,52 +490,62 @@ export default function AccountsPage() {
                                         <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
                                             {!user.isDeleted ? (
                                                 <>
-                                                    <button
-                                                        className="btn btn-icon btn-ghost"
-                                                        title="Gán quyền"
-                                                        id={`manage-role-${user.id}`}
-                                                        onClick={() => setRoleManagerUser(user)}
-                                                        style={{ color: 'var(--accent-light)' }}
-                                                    >
-                                                        <ShieldCheck size={15} />
-                                                    </button>
-                                                    <button
-                                                        className="btn btn-icon btn-ghost"
-                                                        title={user.isActive ? 'Khóa tài khoản' : 'Mở khóa tài khoản'}
-                                                        id={`toggle-user-${user.id}`}
-                                                        onClick={() => handleToggleActive(user)}
-                                                        style={{ color: user.isActive ? 'var(--amber)' : 'var(--green)' }}
-                                                    >
-                                                        {user.isActive ? <Lock size={15} /> : <Unlock size={15} />}
-                                                    </button>
-                                                    <button
-                                                        className="btn btn-icon btn-danger-subtle"
-                                                        title="Xóa tài khoản"
-                                                        id={`delete-${user.id}`}
-                                                        onClick={() => handleDelete(user)}
-                                                    >
-                                                        <Trash2 size={15} />
-                                                    </button>
+                                                    {hasPermission('MANAGE_USER_ROLE') && (
+                                                        <button
+                                                            className="btn btn-icon btn-ghost"
+                                                            title="Gán quyền"
+                                                            id={`manage-role-${user.id}`}
+                                                            onClick={() => setRoleManagerUser(user)}
+                                                            style={{ color: 'var(--accent-light)' }}
+                                                        >
+                                                            <ShieldCheck size={15} />
+                                                        </button>
+                                                    )}
+                                                    {hasPermission('UPDATE_USER') && (
+                                                        <button
+                                                            className="btn btn-icon btn-ghost"
+                                                            title={user.isActive ? 'Khóa tài khoản' : 'Mở khóa tài khoản'}
+                                                            id={`toggle-user-${user.id}`}
+                                                            onClick={() => handleToggleActive(user)}
+                                                            style={{ color: user.isActive ? 'var(--amber)' : 'var(--green)' }}
+                                                        >
+                                                            {user.isActive ? <Lock size={15} /> : <Unlock size={15} />}
+                                                        </button>
+                                                    )}
+                                                    {hasPermission('DELETE_USER') && (
+                                                        <button
+                                                            className="btn btn-icon btn-danger-subtle"
+                                                            title="Xóa tài khoản"
+                                                            id={`delete-${user.id}`}
+                                                            onClick={() => handleDelete(user)}
+                                                        >
+                                                            <Trash2 size={15} />
+                                                        </button>
+                                                    )}
                                                 </>
                                             ) : (
                                                 <>
-                                                    <button
-                                                        className="btn btn-icon btn-ghost"
-                                                        title="Khôi phục"
-                                                        id={`restore-${user.id}`}
-                                                        onClick={() => handleRestore(user)}
-                                                        style={{ color: 'var(--blue)' }}
-                                                    >
-                                                        <RotateCcw size={15} />
-                                                    </button>
-                                                    <button
-                                                        className="btn btn-icon btn-danger"
-                                                        title="Xóa vĩnh viễn"
-                                                        id={`perm-delete-${user.id}`}
-                                                        onClick={() => handlePermanentDelete(user)}
-                                                    >
-                                                        <Trash2 size={15} />
-                                                    </button>
+                                                    {hasPermission('RESTORE_USER') && (
+                                                        <button
+                                                            className="btn btn-icon btn-ghost"
+                                                            title="Khôi phục"
+                                                            id={`restore-${user.id}`}
+                                                            onClick={() => handleRestore(user)}
+                                                            style={{ color: 'var(--blue)' }}
+                                                        >
+                                                            <RotateCcw size={15} />
+                                                        </button>
+                                                    )}
+                                                    {hasPermission('PERMANENT_DELETE_USER') && (
+                                                        <button
+                                                            className="btn btn-icon btn-danger"
+                                                            title="Xóa vĩnh viễn"
+                                                            id={`perm-delete-${user.id}`}
+                                                            onClick={() => handlePermanentDelete(user)}
+                                                        >
+                                                            <Trash2 size={15} />
+                                                        </button>
+                                                    )}
                                                 </>
                                             )}
                                         </div>

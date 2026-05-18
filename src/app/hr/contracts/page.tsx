@@ -9,6 +9,7 @@ import DataTable from '@/components/ui/DataTable';
 import { FilterPills, SearchBox } from '@/components/ui/ToolbarControls';
 import { useToast } from '@/hooks/useToast';
 import ToastStack from '@/components/ToastStack';
+import { usePermissions } from '@/hooks/usePermissions';
 
 type ContractRow = {
     id: string;
@@ -60,6 +61,7 @@ function StatusBadge({ status }: { status?: string }) {
 }
 
 export default function ContractsPage() {
+    const { hasPermission } = usePermissions();
     const { toasts, push: pushToast } = useToast();
     const [page, setPage] = useState(0);
     const [pageSize, setPageSize] = useState(10);
@@ -98,9 +100,11 @@ export default function ContractsPage() {
                 title="Hợp đồng lao động"
                 subtitle="Quản lý danh sách hợp đồng và trạng thái hiệu lực"
                 actions={
-                    <button type="button" className="btn btn-primary" onClick={() => setFormModal({ open: true })}>
-                        <Plus size={15} /> Thêm hợp đồng
-                    </button>
+                    hasPermission('CREATE_CONTRACT') && (
+                        <button type="button" className="btn btn-primary" onClick={() => setFormModal({ open: true })}>
+                            <Plus size={15} /> Thêm hợp đồng
+                        </button>
+                    )
                 }
             />
 
@@ -187,9 +191,11 @@ export default function ContractsPage() {
                                     <td style={{ color: 'var(--text-muted)', fontSize: 12 }}>{formatDate(row.endDate)}</td>
                                     <td><StatusBadge status={row.status} /></td>
                                     <td>
-                                        <button className="btn btn-sm btn-primary" onClick={() => setFormModal({ open: true, contract: row })}>
-                                            <Pencil size={14} /> Sửa
-                                        </button>
+                                        {hasPermission('UPDATE_CONTRACT') && (
+                                            <button className="btn btn-sm btn-primary" onClick={() => setFormModal({ open: true, contract: row })}>
+                                                <Pencil size={14} /> Sửa
+                                            </button>
+                                        )}
                                     </td>
                                 </tr>
                             ))

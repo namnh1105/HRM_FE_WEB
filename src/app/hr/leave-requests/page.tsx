@@ -13,6 +13,7 @@ import DataTable from '@/components/ui/DataTable';
 import { FilterPills, SearchBox } from '@/components/ui/ToolbarControls';
 import { useToast } from '@/hooks/useToast';
 import ToastStack from '@/components/ToastStack';
+import { usePermissions } from '@/hooks/usePermissions';
 
 type LeaveRow = {
     id: string;
@@ -47,6 +48,7 @@ function StatusBadge({ status }: { status?: string }) {
 }
 
 export default function LeaveRequestsPage() {
+    const { hasPermission } = usePermissions();
     const { toasts, push: pushToast } = useToast();
     const [page, setPage] = useState(0);
     const [pageSize, setPageSize] = useState(10);
@@ -175,7 +177,7 @@ export default function LeaveRequestsPage() {
                                     </td>
                                     <td><StatusBadge status={row.status} /></td>
                                     <td>
-                                        {isPendingRow(row) && (
+                                        {isPendingRow(row) && hasPermission('APPROVE_LEAVE_REQUEST') && (
                                             <div style={{ display: 'flex', gap: 6 }}>
                                                 <button 
                                                     className="btn btn-sm btn-primary" 

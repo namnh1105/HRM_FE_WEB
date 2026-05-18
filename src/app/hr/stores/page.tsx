@@ -15,6 +15,7 @@ import DataTable from '@/components/ui/DataTable';
 import { FilterPills, SearchBox } from '@/components/ui/ToolbarControls';
 import { useToast } from '@/hooks/useToast';
 import ToastStack from '@/components/ToastStack';
+import { usePermissions } from '@/hooks/usePermissions';
 
 type StoreRow = {
     id: string;
@@ -41,6 +42,7 @@ function formatDate(val: string | undefined) {
 }
 
 export default function StoresPage() {
+    const { hasPermission } = usePermissions();
     const { toasts, push: pushToast } = useToast();
     const [search, setSearch] = useState('');
     const [filter, setFilter] = useState<'all' | 'active' | 'inactive'>('all');
@@ -107,9 +109,11 @@ export default function StoresPage() {
                 title="Chi nhánh"
                 subtitle="Quản lý danh sách chi nhánh và thông tin liên hệ"
                 actions={
-                    <button type="button" className="btn btn-primary" onClick={() => setFormModal({ open: true })}>
-                        <Plus size={15} /> Thêm chi nhánh
-                    </button>
+                    hasPermission('CREATE_STORE') && (
+                        <button type="button" className="btn btn-primary" onClick={() => setFormModal({ open: true })}>
+                            <Plus size={15} /> Thêm chi nhánh
+                        </button>
+                    )
                 }
             />
 
@@ -193,12 +197,16 @@ export default function StoresPage() {
                                     <td style={{ color: 'var(--text-muted)', fontSize: 12 }}>{formatDate(row.createdAt)}</td>
                                     <td>
                                         <div style={{ display: 'flex', gap: 6 }}>
-                                            <button className="btn btn-sm btn-primary" onClick={() => setFormModal({ open: true, store: row })}>
-                                                <Pencil size={14} /> Sửa
-                                            </button>
-                                            <button className="btn btn-sm btn-danger" onClick={() => setConfirmDelete(row)}>
-                                                <Trash2 size={14} /> Xóa
-                                            </button>
+                                            {hasPermission('UPDATE_STORE') && (
+                                                <button className="btn btn-sm btn-primary" onClick={() => setFormModal({ open: true, store: row })}>
+                                                    <Pencil size={14} /> Sửa
+                                                </button>
+                                            )}
+                                            {hasPermission('DELETE_STORE') && (
+                                                <button className="btn btn-sm btn-danger" onClick={() => setConfirmDelete(row)}>
+                                                    <Trash2 size={14} /> Xóa
+                                                </button>
+                                            )}
                                         </div>
                                     </td>
                                 </tr>

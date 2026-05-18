@@ -22,6 +22,7 @@ import { SearchBox } from '@/components/ui/ToolbarControls';
 import EntityStatusFilters, { type EntityFilterStatus } from '@/components/ui/EntityStatusFilters';
 import ToastStack from '@/components/ToastStack';
 import { useToast } from '@/hooks/useToast';
+import { usePermissions } from '@/hooks/usePermissions';
 
 const RESOURCES = ['USER', 'ROLE', 'PERMISSION', 'EMPLOYEE', 'ATTENDANCE', 'WORK_SHIFT',
     'LEAVE_REQUEST', 'PAYROLL', 'CONTRACT', 'DEPARTMENT', 'PROFILE', 'STORE', 'AUDIT_LOG',
@@ -117,6 +118,7 @@ function PermFormModal({ initial, onClose, pushToast }: {
 }
 
 export default function PermissionsPage() {
+    const { hasPermission } = usePermissions();
     const [page, setPage] = useState(0);
     const [search, setSearch] = useState('');
     const [filterStatus, setFilterStatus] = useState<EntityFilterStatus>('all');
@@ -218,9 +220,11 @@ export default function PermissionsPage() {
                 title="Quản lý quyền hạn"
                 subtitle="Cấu hình các quyền hệ thống, nhóm theo tài nguyên"
                 actions={
-                    <button type="button" className="btn btn-primary" id="create-perm-btn" onClick={() => setFormModal({ open: true })}>
-                        <Plus size={15} /> Tạo Quyền mới
-                    </button>
+                    hasPermission('MANAGE_PERMISSIONS') && (
+                        <button type="button" className="btn btn-primary" id="create-perm-btn" onClick={() => setFormModal({ open: true })}>
+                            <Plus size={15} /> Tạo Quyền mới
+                        </button>
+                    )
                 }
             />
 
@@ -364,32 +368,40 @@ export default function PermissionsPage() {
                                                         <div style={{ display: 'flex', gap: 6 }}>
                                                             {!perm.isDeleted ? (
                                                                 <>
-                                                                    <button className="btn btn-icon btn-ghost" title="Cập nhật"
-                                                                        id={`edit-perm-${perm.id}`}
-                                                                        onClick={(e) => { e.stopPropagation(); setFormModal({ open: true, perm }); }}
-                                                                        style={{ color: 'var(--accent-light)' }}>
-                                                                        <Pencil size={14} />
-                                                                    </button>
-                                                                    <button className="btn btn-icon btn-ghost"
-                                                                        title={perm.isActive ? 'Khóa' : 'Mở khóa'}
-                                                                        id={`toggle-perm-${perm.id}`}
-                                                                        onClick={(e) => { e.stopPropagation(); handleToggle(perm); }}
-                                                                        style={{ color: perm.isActive ? 'var(--amber)' : 'var(--green)' }}>
-                                                                        {perm.isActive ? <Lock size={15} /> : <Unlock size={15} />}
-                                                                    </button>
-                                                                    <button className="btn btn-icon btn-danger-subtle" title="Xóa"
-                                                                        id={`delete-perm-${perm.id}`}
-                                                                        onClick={(e) => { e.stopPropagation(); handleDelete(perm); }}>
-                                                                        <Trash2 size={14} />
-                                                                    </button>
+                                                                    {hasPermission('MANAGE_PERMISSIONS') && (
+                                                                        <button className="btn btn-icon btn-ghost" title="Cập nhật"
+                                                                            id={`edit-perm-${perm.id}`}
+                                                                            onClick={(e) => { e.stopPropagation(); setFormModal({ open: true, perm }); }}
+                                                                            style={{ color: 'var(--accent-light)' }}>
+                                                                            <Pencil size={14} />
+                                                                        </button>
+                                                                    )}
+                                                                    {hasPermission('MANAGE_PERMISSIONS') && (
+                                                                        <button className="btn btn-icon btn-ghost"
+                                                                            title={perm.isActive ? 'Khóa' : 'Mở khóa'}
+                                                                            id={`toggle-perm-${perm.id}`}
+                                                                            onClick={(e) => { e.stopPropagation(); handleToggle(perm); }}
+                                                                            style={{ color: perm.isActive ? 'var(--amber)' : 'var(--green)' }}>
+                                                                            {perm.isActive ? <Lock size={15} /> : <Unlock size={15} />}
+                                                                        </button>
+                                                                    )}
+                                                                    {hasPermission('MANAGE_PERMISSIONS') && (
+                                                                        <button className="btn btn-icon btn-danger-subtle" title="Xóa"
+                                                                            id={`delete-perm-${perm.id}`}
+                                                                            onClick={(e) => { e.stopPropagation(); handleDelete(perm); }}>
+                                                                            <Trash2 size={14} />
+                                                                        </button>
+                                                                    )}
                                                                 </>
                                                             ) : (
-                                                                <button className="btn btn-icon btn-ghost" title="Khôi phục"
-                                                                    id={`restore-perm-${perm.id}`}
-                                                                    onClick={(e) => { e.stopPropagation(); handleRestore(perm); }}
-                                                                    style={{ color: 'var(--blue)' }}>
-                                                                    <RotateCcw size={15} />
-                                                                </button>
+                                                                hasPermission('MANAGE_PERMISSIONS') && (
+                                                                    <button className="btn btn-icon btn-ghost" title="Khôi phục"
+                                                                        id={`restore-perm-${perm.id}`}
+                                                                        onClick={(e) => { e.stopPropagation(); handleRestore(perm); }}
+                                                                        style={{ color: 'var(--blue)' }}>
+                                                                        <RotateCcw size={15} />
+                                                                    </button>
+                                                                )
                                                             )}
                                                         </div>
                                                     </td>

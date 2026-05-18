@@ -12,6 +12,7 @@ import {
     useGetPayrollsByMonthYearQuery,
 } from '@/store/api/hrApi';
 import type { PayrollSummary } from '@/types/payroll';
+import { usePermissions } from '@/hooks/usePermissions';
 
 function formatMoney(val?: number) {
     if (val === null || val === undefined) return '—';
@@ -28,6 +29,7 @@ function StatusBadge({ status }: { status?: string }) {
 }
 
 export default function PayrollsPage() {
+    const { hasPermission } = usePermissions();
     const { toasts, push: pushToast } = useToast();
     const now = new Date();
     const [month, setMonth] = useState<number>(now.getMonth() + 1);
@@ -87,14 +89,16 @@ export default function PayrollsPage() {
                 title="Bảng lương"
                 subtitle="Tính lương theo chấm công và hợp đồng"
                 actions={
-                    <button
-                        type="button"
-                        className="btn btn-primary"
-                        onClick={handleGenerate}
-                        disabled={generating}
-                    >
-                        Tạo bảng lương
-                    </button>
+                    hasPermission('CREATE_PAYROLL') && (
+                        <button
+                            type="button"
+                            className="btn btn-primary"
+                            onClick={handleGenerate}
+                            disabled={generating}
+                        >
+                            Tạo bảng lương
+                        </button>
+                    )
                 }
             />
 

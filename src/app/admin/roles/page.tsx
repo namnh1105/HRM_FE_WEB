@@ -34,6 +34,7 @@ import { SearchBox } from '@/components/ui/ToolbarControls';
 import EntityStatusFilters, { type EntityFilterStatus } from '@/components/ui/EntityStatusFilters';
 import ToastStack from '@/components/ToastStack';
 import { useToast } from '@/hooks/useToast';
+import { usePermissions } from '@/hooks/usePermissions';
 
 // ─── Role Form Modal ──────────────────────────────────────────────────────────
 function RoleFormModal({
@@ -381,6 +382,7 @@ function PermissionManagerModal({
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function RolesPage() {
+    const { hasPermission } = usePermissions();
     const [page, setPage] = useState(0);
     const [pageSize, setPageSize] = useState(10);
     const [search, setSearch] = useState('');
@@ -467,9 +469,11 @@ export default function RolesPage() {
                 title="Quản lý vai trò"
                 subtitle="Tạo và cấu hình các vai trò trong hệ thống"
                 actions={
-                    <button type="button" className="btn btn-primary" id="create-role-btn" onClick={() => setFormModal({ open: true })}>
-                        <Plus size={15} /> Tạo Role mới
-                    </button>
+                    hasPermission('MANAGE_ROLES') && (
+                        <button type="button" className="btn btn-primary" id="create-role-btn" onClick={() => setFormModal({ open: true })}>
+                            <Plus size={15} /> Tạo Role mới
+                        </button>
+                    )
                 }
             />
 
@@ -508,14 +512,14 @@ export default function RolesPage() {
                 pagination={
                     meta
                         ? {
-                              page,
-                              totalPages: Math.max(1, meta.totalPages),
-                              totalItems: meta.totalItems,
-                              itemLabel: 'roles',
-                              onPageChange: setPage,
-                              pageSize,
-                              onPageSizeChange: (s) => { setPageSize(s); setPage(0); },
-                          }
+                            page,
+                            totalPages: Math.max(1, meta.totalPages),
+                            totalItems: meta.totalItems,
+                            itemLabel: 'roles',
+                            onPageChange: setPage,
+                            pageSize,
+                            onPageSizeChange: (s) => { setPageSize(s); setPage(0); },
+                        }
                         : null
                 }
             >
@@ -576,53 +580,63 @@ export default function RolesPage() {
                                     </td>
                                     <td>
                                         <div style={{ display: 'flex', gap: 6 }}>
-                                            <button
-                                                className="btn btn-ghost btn-sm"
-                                                title="Xem quyền"
-                                                id={`manage-perm-${role.id}`}
-                                                onClick={() => setPermModal(role)}
-                                            >
-                                                <Key size={13} /> Xem quyền
-                                            </button>
+                                            {hasPermission('MANAGE_PERMISSIONS') && (
+                                                <button
+                                                    className="btn btn-ghost btn-sm"
+                                                    title="Xem quyền"
+                                                    id={`manage-perm-${role.id}`}
+                                                    onClick={() => setPermModal(role)}
+                                                >
+                                                    <Key size={13} /> Xem quyền
+                                                </button>
+                                            )}
                                             {!role.isDeleted ? (
                                                 <>
-                                                    <button
-                                                        className="btn btn-icon btn-ghost"
-                                                        title="Cập nhật"
-                                                        id={`edit-role-${role.id}`}
-                                                        onClick={() => setFormModal({ open: true, role })}
-                                                        style={{ color: 'var(--accent-light)' }}
-                                                    >
-                                                        <Pencil size={14} />
-                                                    </button>
-                                                    <button
-                                                        className="btn btn-icon btn-ghost"
-                                                        title={role.isActive ? 'Khóa' : 'Mở khóa'}
-                                                        id={`toggle-role-${role.id}`}
-                                                        onClick={() => handleToggleActive(role)}
-                                                        style={{ color: role.isActive ? 'var(--amber)' : 'var(--green)' }}
-                                                    >
-                                                        {role.isActive ? <Lock size={15} /> : <Unlock size={15} />}
-                                                    </button>
-                                                    <button
-                                                        className="btn btn-icon btn-danger-subtle"
-                                                        title="Xóa"
-                                                        id={`delete-role-${role.id}`}
-                                                        onClick={() => handleDelete(role)}
-                                                    >
-                                                        <Trash2 size={14} />
-                                                    </button>
+                                                    {hasPermission('MANAGE_ROLES') && (
+                                                        <button
+                                                            className="btn btn-icon btn-ghost"
+                                                            title="Cập nhật"
+                                                            id={`edit-role-${role.id}`}
+                                                            onClick={() => setFormModal({ open: true, role })}
+                                                            style={{ color: 'var(--accent-light)' }}
+                                                        >
+                                                            <Pencil size={14} />
+                                                        </button>
+                                                    )}
+                                                    {hasPermission('MANAGE_ROLES') && (
+                                                        <button
+                                                            className="btn btn-icon btn-ghost"
+                                                            title={role.isActive ? 'Khóa' : 'Mở khóa'}
+                                                            id={`toggle-role-${role.id}`}
+                                                            onClick={() => handleToggleActive(role)}
+                                                            style={{ color: role.isActive ? 'var(--amber)' : 'var(--green)' }}
+                                                        >
+                                                            {role.isActive ? <Lock size={15} /> : <Unlock size={15} />}
+                                                        </button>
+                                                    )}
+                                                    {hasPermission('MANAGE_ROLES') && (
+                                                        <button
+                                                            className="btn btn-icon btn-danger-subtle"
+                                                            title="Xóa"
+                                                            id={`delete-role-${role.id}`}
+                                                            onClick={() => handleDelete(role)}
+                                                        >
+                                                            <Trash2 size={14} />
+                                                        </button>
+                                                    )}
                                                 </>
                                             ) : (
-                                                <button
-                                                    className="btn btn-icon btn-ghost"
-                                                    title="Khôi phục"
-                                                    id={`restore-role-${role.id}`}
-                                                    onClick={() => handleRestore(role)}
-                                                    style={{ color: 'var(--blue)' }}
-                                                >
-                                                    <RotateCcw size={15} />
-                                                </button>
+                                                hasPermission('MANAGE_ROLES') && (
+                                                    <button
+                                                        className="btn btn-icon btn-ghost"
+                                                        title="Khôi phục"
+                                                        id={`restore-role-${role.id}`}
+                                                        onClick={() => handleRestore(role)}
+                                                        style={{ color: 'var(--blue)' }}
+                                                    >
+                                                        <RotateCcw size={15} />
+                                                    </button>
+                                                )
                                             )}
                                         </div>
                                     </td>

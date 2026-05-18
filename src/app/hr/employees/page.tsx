@@ -22,6 +22,7 @@ import DataTable from '@/components/ui/DataTable';
 import { FilterPills, SearchBox } from '@/components/ui/ToolbarControls';
 import { useToast } from '@/hooks/useToast';
 import ToastStack from '@/components/ToastStack';
+import { usePermissions } from '@/hooks/usePermissions';
 
 type EmployeeRow = {
     id: string;
@@ -64,6 +65,7 @@ const DEGREE_LEVEL_LABELS: Record<string, string> = {
 };
 
 export default function EmployeesPage() {
+    const { hasPermission } = usePermissions();
     const { toasts, push: pushToast } = useToast();
     const [page, setPage] = useState(0);
     const [pageSize, setPageSize] = useState(10);
@@ -103,9 +105,11 @@ export default function EmployeesPage() {
                 title="Nhân viên"
                 subtitle="Quản lý danh sách nhân viên và hồ sơ"
                 actions={
-                    <button type="button" className="btn btn-primary" onClick={() => setFormModal({ open: true })}>
-                        <Plus size={15} /> Thêm nhân viên
-                    </button>
+                    hasPermission('CREATE_EMPLOYEE') && (
+                        <button type="button" className="btn btn-primary" onClick={() => setFormModal({ open: true })}>
+                            <Plus size={15} /> Thêm nhân viên
+                        </button>
+                    )
                 }
             />
 
@@ -194,9 +198,11 @@ export default function EmployeesPage() {
                                             <button className="btn btn-sm btn-ghost" onClick={() => setDetailRow(row)}>
                                                 <Eye size={14} /> Xem
                                             </button>
-                                            <button className="btn btn-sm btn-primary" onClick={() => setFormModal({ open: true, employee: row })}>
-                                                <Pencil size={14} /> Sửa
-                                            </button>
+                                            {hasPermission('UPDATE_EMPLOYEE') && (
+                                                <button className="btn btn-sm btn-primary" onClick={() => setFormModal({ open: true, employee: row })}>
+                                                    <Pencil size={14} /> Sửa
+                                                </button>
+                                            )}
                                         </div>
                                     </td>
                                 </tr>
@@ -296,6 +302,7 @@ function EmployeeFormModal({ initial, onClose, onSaved, pushToast }: any) {
 }
 
 function EmployeeDetailModal({ row, onClose, pushToast }: any) {
+    const { hasPermission } = usePermissions();
     const { data: detailData, isLoading: detailLoading, refetch: refetchDetail } = useGetEmployeeByIdQuery(row.id);
     const employee = (detailData as any)?.data ?? row;
 
@@ -601,12 +608,14 @@ function EmployeeDetailModal({ row, onClose, pushToast }: any) {
                         <div style={sectionStyle}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                 <div style={sectionTitleStyle}>Thông tin cơ bản & địa chỉ</div>
-                                <button
-                                    className="btn btn-sm btn-ghost"
-                                    onClick={() => setEditing((prev) => ({ ...prev, overview: !prev.overview }))}
-                                >
-                                    {editing.overview ? 'Hủy' : 'Chỉnh sửa'}
-                                </button>
+                                {hasPermission('UPDATE_EMPLOYEE') && (
+                                    <button
+                                        className="btn btn-sm btn-ghost"
+                                        onClick={() => setEditing((prev) => ({ ...prev, overview: !prev.overview }))}
+                                    >
+                                        {editing.overview ? 'Hủy' : 'Chỉnh sửa'}
+                                    </button>
+                                )}
                             </div>
                             {editing.overview ? (
                                 <div style={{ display: 'grid', gap: 10 }}>
@@ -679,12 +688,14 @@ function EmployeeDetailModal({ row, onClose, pushToast }: any) {
                         <div style={sectionStyle}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                 <div style={sectionTitleStyle}>Thông tin công việc</div>
-                                <button
-                                    className="btn btn-sm btn-ghost"
-                                    onClick={() => setEditing((prev) => ({ ...prev, work: !prev.work }))}
-                                >
-                                    {editing.work ? 'Hủy' : 'Chỉnh sửa'}
-                                </button>
+                                {hasPermission('UPDATE_EMPLOYEE') && (
+                                    <button
+                                        className="btn btn-sm btn-ghost"
+                                        onClick={() => setEditing((prev) => ({ ...prev, work: !prev.work }))}
+                                    >
+                                        {editing.work ? 'Hủy' : 'Chỉnh sửa'}
+                                    </button>
+                                )}
                             </div>
                             {editing.work ? (
                                 <div style={{ display: 'grid', gap: 10 }}>
@@ -730,12 +741,14 @@ function EmployeeDetailModal({ row, onClose, pushToast }: any) {
                         <div style={sectionStyle}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                 <div style={sectionTitleStyle}>Thẻ ngân hàng & Thuế</div>
-                                <button
-                                    className="btn btn-sm btn-ghost"
-                                    onClick={() => setEditing((prev) => ({ ...prev, bank: !prev.bank }))}
-                                >
-                                    {editing.bank ? 'Hủy' : 'Chỉnh sửa'}
-                                </button>
+                                {hasPermission('UPDATE_EMPLOYEE') && (
+                                    <button
+                                        className="btn btn-sm btn-ghost"
+                                        onClick={() => setEditing((prev) => ({ ...prev, bank: !prev.bank }))}
+                                    >
+                                        {editing.bank ? 'Hủy' : 'Chỉnh sửa'}
+                                    </button>
+                                )}
                             </div>
                             {editing.bank ? (
                                 <div style={{ display: 'grid', gap: 10 }}>
@@ -771,12 +784,14 @@ function EmployeeDetailModal({ row, onClose, pushToast }: any) {
                         <div style={sectionStyle}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                 <div style={sectionTitleStyle}>Bảo hiểm</div>
-                                <button
-                                    className="btn btn-sm btn-ghost"
-                                    onClick={() => setEditing((prev) => ({ ...prev, insurance: !prev.insurance }))}
-                                >
-                                    {editing.insurance ? 'Hủy' : 'Chỉnh sửa'}
-                                </button>
+                                {hasPermission('UPDATE_EMPLOYEE') && (
+                                    <button
+                                        className="btn btn-sm btn-ghost"
+                                        onClick={() => setEditing((prev) => ({ ...prev, insurance: !prev.insurance }))}
+                                    >
+                                        {editing.insurance ? 'Hủy' : 'Chỉnh sửa'}
+                                    </button>
+                                )}
                             </div>
                             {editing.insurance ? (
                                 <div style={{ display: 'grid', gap: 10 }}>
@@ -838,7 +853,9 @@ function EmployeeDetailModal({ row, onClose, pushToast }: any) {
                         <div style={sectionStyle}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                 <div style={sectionTitleStyle}>Bằng cấp</div>
-                                <button className="btn btn-sm btn-primary" onClick={() => setShowCreateDegree(true)}>Thêm bằng cấp</button>
+                                {hasPermission('CREATE_DEGREE') && (
+                                    <button className="btn btn-sm btn-primary" onClick={() => setShowCreateDegree(true)}>Thêm bằng cấp</button>
+                                )}
                             </div>
                             {degreeLoading ? (
                                 <div className="skeleton" style={{ height: 16, width: '60%' }} />
@@ -877,12 +894,14 @@ function EmployeeDetailModal({ row, onClose, pushToast }: any) {
                         <div style={sectionStyle}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                 <div style={sectionTitleStyle}>Hợp đồng</div>
-                                <button
-                                    className="btn btn-sm btn-primary"
-                                    onClick={() => setShowCreateContract(true)}
-                                >
-                                    Thêm hợp đồng
-                                </button>
+                                {hasPermission('CREATE_CONTRACT') && (
+                                    <button
+                                        className="btn btn-sm btn-primary"
+                                        onClick={() => setShowCreateContract(true)}
+                                    >
+                                        Thêm hợp đồng
+                                    </button>
+                                )}
                             </div>
                             {contractLoading ? (
                                 <div className="skeleton" style={{ height: 16, width: '60%' }} />
@@ -921,12 +940,14 @@ function EmployeeDetailModal({ row, onClose, pushToast }: any) {
                         <div style={sectionStyle}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                 <div style={sectionTitleStyle}>Điều chuyển công tác</div>
-                                <button
-                                    className="btn btn-sm btn-ghost"
-                                    onClick={() => setEditing((prev) => ({ ...prev, transfer: !prev.transfer }))}
-                                >
-                                    {editing.transfer ? 'Hủy' : 'Chỉnh sửa'}
-                                </button>
+                                {hasPermission('UPDATE_EMPLOYEE') && (
+                                    <button
+                                        className="btn btn-sm btn-ghost"
+                                        onClick={() => setEditing((prev) => ({ ...prev, transfer: !prev.transfer }))}
+                                    >
+                                        {editing.transfer ? 'Hủy' : 'Chỉnh sửa'}
+                                    </button>
+                                )}
                             </div>
                             {editing.transfer ? (
                                 <div style={{ display: 'grid', gap: 10 }}>
