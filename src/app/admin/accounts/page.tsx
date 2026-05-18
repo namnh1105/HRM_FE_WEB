@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import {
     useGetAllUsersQuery,
+    useSearchUsersQuery,
     useDeleteUserMutation,
     useRestoreUserMutation,
     usePermanentDeleteUserMutation,
@@ -259,7 +260,18 @@ export default function AccountsPage() {
     const [activateUser] = useActivateUserMutation();
     const [deactivateUser] = useDeactivateUserMutation();
 
-    const { data, isLoading, isFetching } = useGetAllUsersQuery({
+    const trimmedSearch = search.trim();
+    const { data: searchData, isFetching: searchFetching } = useSearchUsersQuery(
+        {
+            keyword: trimmedSearch,
+            includeDeleted: filterStatus === 'all' || filterStatus === 'deleted',
+            page,
+            size: pageSize,
+        },
+        { skip: !trimmedSearch }
+    );
+
+    const { data, isLoading, isFetching: allFetching } = useGetAllUsersQuery({
         page,
         size: pageSize,
         includeDeleted: filterStatus === 'all' || filterStatus === 'deleted',
@@ -278,27 +290,19 @@ export default function AccountsPage() {
 
     const { toasts, push: pushToast } = useToast();
 
-    const users = data?.data ?? [];
-    const meta = data?.pagination;
+    const activeData = trimmedSearch ? searchData : data;
+    const users = activeData?.data ?? [];
+    const meta = activeData?.pagination;
     const stats = statsData?.data;
+    const isFetching = trimmedSearch ? searchFetching : allFetching;
 
     const filtered = useMemo(() => {
         let list = users;
         if (filterStatus === 'active') list = list.filter((u) => u.isActive && !u.isDeleted);
         else if (filterStatus === 'inactive') list = list.filter((u) => !u.isActive && !u.isDeleted);
         else if (filterStatus === 'deleted') list = list.filter((u) => u.isDeleted);
-
-        if (search.trim()) {
-            const q = search.toLowerCase();
-            list = list.filter(
-                (u) =>
-                    u.email.toLowerCase().includes(q) ||
-                    u.employee?.fullName?.toLowerCase().includes(q) ||
-                    u.roles?.some((r) => r.toLowerCase().includes(q))
-            );
-        }
         return list;
-    }, [users, search, filterStatus]);
+    }, [users, filterStatus]);
 
     const handleDelete = (user: UserResponse) => {
         setConfirmAction({

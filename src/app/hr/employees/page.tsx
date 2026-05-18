@@ -14,6 +14,7 @@ import {
     useGetStoresQuery,
     useCreateContractMutation,
     useCreateDegreeMutation,
+    useSearchEmployeesQuery,
 } from '@/store/api/hrApi';
 import PageHeader from '@/components/ui/PageHeader';
 import StatCards from '@/components/ui/StatCards';
@@ -69,33 +70,32 @@ export default function EmployeesPage() {
     const [search, setSearch] = useState('');
     const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'inactive'>('all');
 
-    const { data, isLoading, isFetching, refetch } = useGetEmployeesQuery({ page, size: pageSize });
+    const trimmedSearch = search.trim();
+    const { data: searchData, isFetching: searchFetching } = useSearchEmployeesQuery(
+        { keyword: trimmedSearch, page, size: pageSize },
+        { skip: !trimmedSearch }
+    );
+    const { data, isLoading, isFetching: allFetching, refetch } = useGetEmployeesQuery({ page, size: pageSize });
 
     // Fetch stats
     const { data: statsData } = useGetEmployeeStatsQuery();
     const stats: any = (statsData as any)?.data;
 
     // Đồng bộ cách lấy data và pagination giống Roles page
-    const employees = (data as any)?.data ?? [];
-    const meta = (data as any)?.pagination;
+    const activeData = trimmedSearch ? searchData : data;
+    const employees = (activeData as any)?.data ?? [];
+    const meta = (activeData as any)?.pagination;
+    const isFetching = trimmedSearch ? searchFetching : allFetching;
 
     const [formModal, setFormModal] = useState<{ open: boolean; employee?: EmployeeRow }>({ open: false });
     const [detailRow, setDetailRow] = useState<EmployeeRow | null>(null);
 
     const filtered = useMemo(() => {
         let list = [...employees];
-        const q = search.toLowerCase();
-        if (q) {
-            list = list.filter(r =>
-                r.fullName?.toLowerCase().includes(q) ||
-                r.email?.toLowerCase().includes(q) ||
-                r.phone?.toLowerCase().includes(q)
-            );
-        }
         if (filterStatus === 'active') list = list.filter(r => r.employmentStatus?.toUpperCase() === 'ACTIVE');
         if (filterStatus === 'inactive') list = list.filter(r => r.employmentStatus?.toUpperCase() !== 'ACTIVE');
         return list;
-    }, [employees, search, filterStatus]);
+    }, [employees, filterStatus]);
 
     return (
         <>

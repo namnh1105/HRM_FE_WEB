@@ -7,6 +7,7 @@ import {
     useDeleteStoreMutation,
     useGetStoresQuery,
     useUpdateStoreMutation,
+    useSearchStoresQuery,
 } from '@/store/api/hrApi';
 import PageHeader from '@/components/ui/PageHeader';
 import StatCards from '@/components/ui/StatCards';
@@ -44,12 +45,18 @@ export default function StoresPage() {
     const [search, setSearch] = useState('');
     const [filter, setFilter] = useState<'all' | 'active' | 'inactive'>('all');
 
-    const { data, isLoading, isFetching, refetch } = useGetStoresQuery();
+    const trimmedSearch = search.trim();
+    const { data: searchData, isFetching: searchFetching } = useSearchStoresQuery(
+        { keyword: trimmedSearch },
+        { skip: !trimmedSearch }
+    );
+    const { data, isLoading, isFetching: allFetching, refetch } = useGetStoresQuery();
     const [createStore] = useCreateStoreMutation();
     const [updateStore] = useUpdateStoreMutation();
     const [deleteStore] = useDeleteStoreMutation();
 
-    const stores: StoreRow[] = (data as any)?.data ?? [];
+    const stores: StoreRow[] = (trimmedSearch ? (searchData as any) : data)?.data ?? [];
+    const isFetching = trimmedSearch ? searchFetching : allFetching;
 
     const stats = useMemo(() => {
         const total = stores.length;
@@ -60,18 +67,10 @@ export default function StoresPage() {
 
     const filtered = useMemo(() => {
         let list = [...stores];
-        const q = search.toLowerCase();
-        if (q) {
-            list = list.filter(r =>
-                r.name?.toLowerCase().includes(q) ||
-                r.code?.toLowerCase().includes(q) ||
-                r.address?.toLowerCase().includes(q)
-            );
-        }
         if (filter === 'active') list = list.filter(isActiveStore);
         if (filter === 'inactive') list = list.filter(r => !isActiveStore(r));
         return list;
-    }, [stores, search, filter]);
+    }, [stores, filter]);
 
     const [formModal, setFormModal] = useState<{ open: boolean; store?: StoreRow }>({ open: false });
     const [confirmDelete, setConfirmDelete] = useState<StoreRow | null>(null);

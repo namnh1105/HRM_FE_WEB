@@ -51,6 +51,19 @@ export const userApi = baseApi.injectEndpoints({
                     : [{ type: 'User', id: 'LIST' }],
         }),
 
+        // GET /api/v1/users/search
+        searchUsers: builder.query<PaginatedApiResponse<UserResponse>, { keyword: string; includeDeleted?: boolean; page?: number; size?: number }>({
+            query: ({ keyword, includeDeleted = false, page = 0, size = 10 }) => ({
+                url: `users/search?keyword=${encodeURIComponent(keyword)}&includeDeleted=${includeDeleted}&page=${page}&size=${size}`,
+                method: 'GET',
+            }),
+            transformResponse: (response: PaginatedApiResponse<RawUserLike>) => ({
+                ...response,
+                data: (response.data ?? []).map(normalizeUser),
+            }),
+            providesTags: [{ type: 'User', id: 'SEARCH' }],
+        }),
+
         // GET /api/v1/users/me
         getMe: builder.query<ApiResponse<UserResponse>, void>({
             query: () => ({ url: 'users/me', method: 'GET' }),
@@ -74,31 +87,31 @@ export const userApi = baseApi.injectEndpoints({
         // DELETE /api/v1/users/:id  (soft delete)
         deleteUser: builder.mutation<ApiResponse<null>, string>({
             query: (userId) => ({ url: `users/${userId}`, method: 'DELETE' }),
-            invalidatesTags: (_, __, id) => [{ type: 'User', id }, { type: 'User', id: 'LIST' }, { type: 'User', id: 'STATS' }],
+            invalidatesTags: (_, __, id) => [{ type: 'User', id }, { type: 'User', id: 'LIST' }, { type: 'User', id: 'STATS' }, { type: 'User', id: 'SEARCH' }],
         }),
 
         // POST /api/v1/users/:id/activate
         activateUser: builder.mutation<ApiResponse<UserResponse>, string>({
             query: (userId) => ({ url: `users/${userId}/activate`, method: 'POST' }),
-            invalidatesTags: (_, __, id) => [{ type: 'User', id }, { type: 'User', id: 'LIST' }, { type: 'User', id: 'STATS' }],
+            invalidatesTags: (_, __, id) => [{ type: 'User', id }, { type: 'User', id: 'LIST' }, { type: 'User', id: 'STATS' }, { type: 'User', id: 'SEARCH' }],
         }),
 
         // POST /api/v1/users/:id/deactivate
         deactivateUser: builder.mutation<ApiResponse<UserResponse>, string>({
             query: (userId) => ({ url: `users/${userId}/deactivate`, method: 'POST' }),
-            invalidatesTags: (_, __, id) => [{ type: 'User', id }, { type: 'User', id: 'LIST' }, { type: 'User', id: 'STATS' }],
+            invalidatesTags: (_, __, id) => [{ type: 'User', id }, { type: 'User', id: 'LIST' }, { type: 'User', id: 'STATS' }, { type: 'User', id: 'SEARCH' }],
         }),
 
         // POST /api/v1/users/:id/restore
         restoreUser: builder.mutation<ApiResponse<UserResponse>, string>({
             query: (userId) => ({ url: `users/${userId}/restore`, method: 'POST' }),
-            invalidatesTags: (_, __, id) => [{ type: 'User', id }, { type: 'User', id: 'LIST' }, { type: 'User', id: 'STATS' }],
+            invalidatesTags: (_, __, id) => [{ type: 'User', id }, { type: 'User', id: 'LIST' }, { type: 'User', id: 'STATS' }, { type: 'User', id: 'SEARCH' }],
         }),
 
         // DELETE /api/v1/users/:id/permanent
         permanentDeleteUser: builder.mutation<ApiResponse<null>, string>({
             query: (userId) => ({ url: `users/${userId}/permanent`, method: 'DELETE' }),
-            invalidatesTags: [{ type: 'User', id: 'LIST' }, { type: 'User', id: 'STATS' }],
+            invalidatesTags: [{ type: 'User', id: 'LIST' }, { type: 'User', id: 'STATS' }, { type: 'User', id: 'SEARCH' }],
         }),
 
         // GET /api/v1/users/:id/roles
@@ -141,6 +154,7 @@ export const userApi = baseApi.injectEndpoints({
 
 export const {
     useGetAllUsersQuery,
+    useSearchUsersQuery,
     useGetMeQuery,
     useGetUserByIdQuery,
     useDeleteUserMutation,

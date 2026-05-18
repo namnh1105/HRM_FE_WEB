@@ -19,13 +19,33 @@ export const hrApi = baseApi.injectEndpoints({
             }),
             providesTags: [{ type: 'Employee', id: 'LIST' }],
         }),
-            getEmployeesByStore: builder.query<unknown, { storeId: string; page?: number; size?: number }>({
-                query: ({ storeId, page = 0, size = 50 }) => ({
-                    url: `employees/store/${storeId}?page=${page}&size=${size}`,
-                    method: 'GET',
-                }),
-                providesTags: (_res, _err, arg) => [{ type: 'Employee', id: `STORE_${arg.storeId}` }],
+        getEmployeesByStore: builder.query<unknown, { storeId: string; page?: number; size?: number }>({
+            query: ({ storeId, page = 0, size = 50 }) => ({
+                url: `employees/store/${storeId}?page=${page}&size=${size}`,
+                method: 'GET',
             }),
+            providesTags: (_res, _err, arg) => [{ type: 'Employee', id: `STORE_${arg.storeId}` }],
+        }),
+        searchEmployees: builder.query<unknown, { keyword: string; page?: number; size?: number }>({
+            query: ({ keyword, page = 0, size = 10 }) => ({
+                url: `employees/search?keyword=${encodeURIComponent(keyword)}&page=${page}&size=${size}`,
+                method: 'GET',
+            }),
+            providesTags: [{ type: 'Employee', id: 'SEARCH' }],
+        }),
+        searchStores: builder.query<unknown, { keyword: string }>({
+            query: ({ keyword }) => ({
+                url: `stores/search?keyword=${encodeURIComponent(keyword)}`,
+                method: 'GET',
+            }),
+            providesTags: [{ type: 'Store', id: 'SEARCH' }],
+        }),
+        searchDepartments: builder.query<unknown, { keyword: string }>({
+            query: ({ keyword }) => ({
+                url: `departments/search?keyword=${encodeURIComponent(keyword)}`,
+                method: 'GET',
+            }),
+        }),
         getEmployeeStats: builder.query<unknown, void>({
             query: () => ({ url: 'employees/stats', method: 'GET' }),
             providesTags: [{ type: 'Employee', id: 'STATS' }],
@@ -43,7 +63,11 @@ export const hrApi = baseApi.injectEndpoints({
                 method: 'POST',
                 body,
             }),
-            invalidatesTags: [{ type: 'Employee', id: 'LIST' }, { type: 'Employee', id: 'STATS' }],
+            invalidatesTags: [
+                { type: 'Employee', id: 'LIST' },
+                { type: 'Employee', id: 'STATS' },
+                { type: 'Employee', id: 'SEARCH' },
+            ],
         }),
         updateEmployee: builder.mutation<unknown, { id: string; body: UpdateEmployeeRequest }>({
             query: ({ id, body }) => ({
@@ -55,6 +79,7 @@ export const hrApi = baseApi.injectEndpoints({
                 { type: 'Employee', id: 'LIST' },
                 { type: 'Employee', id },
                 { type: 'Employee', id: 'STATS' },
+                { type: 'Employee', id: 'SEARCH' },
             ],
         }),
         getMyAttendanceHistory: builder.query<unknown, { startDate?: string; endDate?: string; page?: number; size?: number }>({
@@ -272,7 +297,7 @@ export const hrApi = baseApi.injectEndpoints({
                 method: 'POST',
                 body,
             }),
-            invalidatesTags: [{ type: 'Store', id: 'LIST' }],
+            invalidatesTags: [{ type: 'Store', id: 'LIST' }, { type: 'Store', id: 'SEARCH' }],
         }),
         updateStore: builder.mutation<unknown, { id: string; body: UpdateStoreRequest }>({
             query: ({ id, body }) => ({
@@ -280,14 +305,15 @@ export const hrApi = baseApi.injectEndpoints({
                 method: 'PUT',
                 body,
             }),
-            invalidatesTags: [{ type: 'Store', id: 'LIST' }],
+            invalidatesTags: [{ type: 'Store', id: 'LIST' }, { type: 'Store', id: 'SEARCH' }],
         }),
         deleteStore: builder.mutation<unknown, string>({
             query: (id) => ({
                 url: `stores/${id}`,
                 method: 'DELETE',
+                body: {},
             }),
-            invalidatesTags: [{ type: 'Store', id: 'LIST' }],
+            invalidatesTags: [{ type: 'Store', id: 'LIST' }, { type: 'Store', id: 'SEARCH' }],
         }),
         getPayrollsByMonthYear: builder.query<ApiResponse<PayrollSummary[]>, { month: number; year: number }>({
             query: ({ month, year }) => ({
@@ -310,7 +336,10 @@ export const hrApi = baseApi.injectEndpoints({
 
 export const {
     useGetEmployeesQuery,
-        useGetEmployeesByStoreQuery,
+    useGetEmployeesByStoreQuery,
+    useSearchEmployeesQuery,
+    useSearchStoresQuery,
+    useSearchDepartmentsQuery,
     useGetEmployeeByIdQuery,
     useCreateEmployeeMutation,
     useUpdateEmployeeMutation,
