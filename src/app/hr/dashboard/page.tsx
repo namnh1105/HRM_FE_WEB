@@ -43,14 +43,6 @@ export default function HrDashboardPage() {
                         Xin chào, {user?.email?.split('@')[0] || 'HR'} — tổng quan công việc hôm nay.
                     </p>
                 </div>
-                <div className="topbar-actions">
-                    <button className="btn btn-ghost btn-sm">
-                        <Activity size={14} /> Xuất báo cáo
-                    </button>
-                    <button className="btn btn-primary btn-sm">
-                        <ArrowUpRight size={14} /> Xem chi tiết
-                    </button>
-                </div>
             </div>
 
             <div className="stat-grid">

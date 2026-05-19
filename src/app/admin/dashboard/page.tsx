@@ -4,35 +4,84 @@ import {
     Users,
     Calendar,
     Clock,
-    TrendingUp,
-    AlertCircle,
     CheckCircle2,
     ArrowUpRight,
-    ArrowDownRight,
-    Briefcase,
     Activity,
     Shield,
     Key,
     Settings,
 } from 'lucide-react';
 import { useAppSelector } from '@/store/hooks';
+import {
+    useGetAttendanceStatsQuery,
+    useGetEmployeeStatsQuery,
+    useGetLeaveRequestStatsQuery,
+    useGetPendingLeaveRequestsQuery,
+    useGetEmployeesQuery,
+    useGetStoresQuery,
+} from '@/store/api/hrApi';
 
 export default function DashboardPage() {
     const user = useAppSelector((s) => s.auth?.user);
 
+    const { data: empStatsData } = useGetEmployeeStatsQuery();
+    const { data: attStatsData } = useGetAttendanceStatsQuery();
+    const { data: leaveStatsData } = useGetLeaveRequestStatsQuery();
+    const { data: pendingLeaveData } = useGetPendingLeaveRequestsQuery({ page: 0, size: 5 });
+    const { data: recentEmployeesData } = useGetEmployeesQuery({ page: 0, size: 5 });
+    const { data: storesData } = useGetStoresQuery();
+
+    const empStats: any = (empStatsData as any)?.data;
+    const attStats: any = (attStatsData as any)?.data;
+    const leaveStats: any = (leaveStatsData as any)?.data;
+
+    const pendingLeaves: any[] = (pendingLeaveData as any)?.data?.content ?? (pendingLeaveData as any)?.data ?? [];
+    const recentEmployees: any[] = (recentEmployeesData as any)?.data?.content ?? (recentEmployeesData as any)?.data ?? [];
+    const stores: any[] = (storesData as any)?.data ?? [];
+
+    const formatDateTime = (value?: string) => {
+        if (!value) return '—';
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) return '—';
+        return date.toLocaleString('vi-VN');
+    };
+
+    const toTimestamp = (value?: string) => {
+        if (!value) return 0;
+        const date = new Date(value);
+        return Number.isNaN(date.getTime()) ? 0 : date.getTime();
+    };
+
     const stats = [
-        { label: 'Tổng nhân viên', value: '248', change: '+12%', icon: Users, color: 'var(--accent-light)' },
-        { label: 'Có mặt hôm nay', value: '231', change: '+2.5%', icon: CheckCircle2, color: 'var(--green)' },
-        { label: 'Đang nghỉ phép', value: '12', change: '-4%', icon: Calendar, color: 'var(--amber)' },
-        { label: 'Đi muộn/Về sớm', value: '5', change: '+1%', icon: Clock, color: 'var(--red)' },
+        { label: 'Tổng nhân viên', value: empStats?.total ?? '—', change: null, icon: Users, color: 'var(--accent-light)' },
+        { label: 'Có mặt hôm nay', value: attStats?.active ?? '—', change: null, icon: CheckCircle2, color: 'var(--green)' },
+        { label: 'Đang nghỉ phép', value: leaveStats?.active ?? '—', change: null, icon: Calendar, color: 'var(--amber)' },
+        { label: 'Đi muộn/Về sớm', value: attStats?.inactive ?? '—', change: null, icon: Clock, color: 'var(--red)' },
     ];
 
     const activities = [
-        { id: 1, type: 'new_user', text: 'Nguyễn Văn An đã gia nhập công ty', time: '10 phút trước', icon: Users, color: 'var(--accent)' },
-        { id: 2, type: 'leave', text: 'Trần Thị Bình xin nghỉ phép 2 ngày', time: '2 giờ trước', icon: Calendar, color: 'var(--amber)' },
-        { id: 3, type: 'payroll', text: 'Đã hoàn tất tính lương đợt 1 tháng 5', time: '5 giờ trước', icon: Briefcase, color: 'var(--green)' },
-        { id: 4, type: 'alert', text: 'Phát hiện lỗi chấm công tại chi nhánh HN', time: '1 ngày trước', icon: AlertCircle, color: 'var(--red)' },
-    ];
+        ...pendingLeaves.map((item, index) => ({
+            id: `leave-${item?.id ?? index}`,
+            type: 'leave',
+            text: `${item?.employeeName ?? 'Nhân viên'} xin nghỉ phép ${item?.totalDays ?? ''} ngày`
+                .replace('  ', ' ').trim(),
+            time: formatDateTime(item?.createdAt),
+            createdAt: item?.createdAt,
+            icon: Calendar,
+            color: 'var(--amber)',
+        })),
+        ...recentEmployees.map((item, index) => ({
+            id: `employee-${item?.id ?? index}`,
+            type: 'new_user',
+            text: `${item?.fullName ?? 'Nhân viên'} đã gia nhập công ty`,
+            time: formatDateTime(item?.createdAt),
+            createdAt: item?.createdAt,
+            icon: Users,
+            color: 'var(--accent)',
+        })),
+    ]
+        .sort((a, b) => toTimestamp(b.createdAt) - toTimestamp(a.createdAt))
+        .slice(0, 4);
 
     return (
         <>
@@ -41,21 +90,13 @@ export default function DashboardPage() {
                     <h1 className="page-title">Chào mừng trở lại, {user?.email?.split('@')[0] || 'Admin'}!</h1>
                     <p className="page-subtitle">Dưới đây là tóm tắt tình hình nhân sự của bạn ngày hôm nay.</p>
                 </div>
-                <div className="topbar-actions">
-                    <button className="btn btn-ghost btn-sm">
-                        <Activity size={14} /> Xuất báo cáo
-                    </button>
-                    <button className="btn btn-primary btn-sm">
-                        <ArrowUpRight size={14} /> Xem chi tiết
-                    </button>
-                </div>
             </div>
 
             {/* Stats Grid */}
             <div className="stat-grid">
                 {stats.map((stat, i) => {
                     const Icon = stat.icon;
-                    const isPositive = stat.change.startsWith('+');
+                    const isPositive = stat.change?.startsWith('+');
                     return (
                         <div key={i} className="stat-card">
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
@@ -67,14 +108,18 @@ export default function DashboardPage() {
                                 }}>
                                     <Icon size={20} style={{ margin: 'auto' }} />
                                 </div>
-                                <span style={{ 
-                                    fontSize: 11, fontWeight: 600, 
-                                    color: isPositive ? 'var(--green)' : 'var(--red)',
-                                    display: 'flex', alignItems: 'center', gap: 2
-                                }}>
-                                    {stat.change}
-                                    {isPositive ? <ArrowUpRight size={12} /> : <ArrowDownRight size={12} />}
-                                </span>
+                                {stat.change ? (
+                                    <span style={{ 
+                                        fontSize: 11, fontWeight: 600, 
+                                        color: isPositive ? 'var(--green)' : 'var(--red)',
+                                        display: 'flex', alignItems: 'center', gap: 2
+                                    }}>
+                                        {stat.change}
+                                        {isPositive ? <ArrowUpRight size={12} /> : <ArrowDownRight size={12} />}
+                                    </span>
+                                ) : (
+                                    <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>—</span>
+                                )}
                             </div>
                             <div style={{ marginTop: 12 }}>
                                 <p className="stat-label">{stat.label}</p>
@@ -94,7 +139,9 @@ export default function DashboardPage() {
                     </div>
                     <div style={{ padding: '12px 20px 20px' }}>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                            {activities.map((act) => {
+                            {activities.length === 0 ? (
+                                <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>Chưa có hoạt động.</p>
+                            ) : activities.map((act) => {
                                 const Icon = act.icon;
                                 return (
                                     <div key={act.id} style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
@@ -155,30 +202,34 @@ export default function DashboardPage() {
             {/* Legend / Small Table */}
             <div className="table-card" style={{ marginTop: 24 }}>
                 <div className="table-toolbar">
-                    <p className="table-title">Tình trạng chấm công chi nhánh</p>
+                    <p className="table-title">Danh sách chi nhánh</p>
                 </div>
                 <table>
                     <thead>
                         <tr>
                             <th>Chi nhánh</th>
-                            <th>Tổng nhân sự</th>
-                            <th>Vắng mặt</th>
-                            <th>Hiệu suất</th>
                             <th>Trạng thái</th>
+                            <th>Mã</th>
+                            <th>Địa chỉ</th>
+                            <th>Điện thoại</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {[
-                            { name: 'Hồ Chí Minh', total: 120, absent: 2, perf: '98%', status: 'Ổn định', color: 'badge-green' },
-                            { name: 'Hà Nội', total: 85, absent: 3, perf: '96%', status: 'Ổn định', color: 'badge-green' },
-                            { name: 'Đà Nẵng', total: 43, absent: 0, perf: '100%', status: 'Tốt', color: 'badge-blue' },
-                        ].map((row, i) => (
-                            <tr key={i}>
-                                <td className="td-primary">{row.name}</td>
-                                <td>{row.total}</td>
-                                <td>{row.absent}</td>
-                                <td>{row.perf}</td>
-                                <td><span className={`badge ${row.color}`}>{row.status}</span></td>
+                        {stores.length === 0 ? (
+                            <tr>
+                                <td colSpan={5} style={{ color: 'var(--text-muted)', padding: '12px 16px' }}>Chưa có dữ liệu.</td>
+                            </tr>
+                        ) : stores.map((row, i) => (
+                            <tr key={row?.id ?? i}>
+                                <td className="td-primary">{row?.name ?? '—'}</td>
+                                <td>
+                                    <span className={`badge ${row?.isActive ? 'badge-green' : 'badge-gray'}`}>
+                                        {row?.isActive ? 'Hoạt động' : 'Tạm dừng'}
+                                    </span>
+                                </td>
+                                <td>{row?.code ?? '—'}</td>
+                                <td>{row?.address ?? '—'}</td>
+                                <td>{row?.phone ?? '—'}</td>
                             </tr>
                         ))}
                     </tbody>
